@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum OrderStatus {
+  PLACED
+  CONFIRMED
+  PAID
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum FulfilmentType {
+  DELIVERY
+  PICKUP
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+model Customer {
+  id                String    @id @default(cuid())
+  name              String
+  phone             String
+  /// Private-link bearer credential: /u/<token>
+  token             String    @unique
+  isActive          Boolean   @default(true)
+  scheduledDeleteAt DateTime?
+  createdAt         DateTime  @default(now())
+  orders            Order[]
+
+  @@index([scheduledDeleteAt])
+}
+
+model Admin {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  passwordHash      String
+  role              Role      @default(ADMIN)
+  /// Deactivated admins cannot sign in; rows are kept for audit history.
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  products          Product[]
+  confirmedPayments Payment[]
+  auditLogs         AuditLog[]
+}
+
+model Product {
+  id                String      @id @default(cuid())
+  adminId           String
+  admin             Admin       @relation(fields: [adminId], references: [id])
+  name              String
+  price             Decimal     @db.Decimal(10, 2)
+  stockQty          Int         @default(0)
+  imageUrl          String?
+  isActive          Boolean     @default(true)
+  category          String      @default("General")
+  scheduledDeleteAt DateTime?
+  createdAt         DateTime    @default(now())
+  orderItems        OrderItem[]
+
+  @@index([scheduledDeleteAt])
+}
+
+model Order {
+  id                String         @id @default(cuid())
+  /// Human-friendly order reference shown as "#12"
+  number            Int            @unique @default(autoincrement())
+  customerId        String
+  customer          Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status            OrderStatus    @default(PLACED)
+  fulfilmentType    FulfilmentType
+  deliveryAddress   String?
+  scheduledDeleteAt DateTime?
+  createdAt         DateTime       @default(now())
+  items             OrderItem[]
+  payment           Payment?
+
+  @@index([customerId, createdAt])
+  @@index([createdAt])
+  @@index([scheduledDeleteAt])
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Nullable so a permanently deleted product doesn't take order history with it.
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  /// Snapshot of the product name at order time.
+  productName  String
+  qty          Int
+  priceAtOrder Decimal  @db.Decimal(10, 2)
+
+  @@index([orderId])
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  orderId            String        @unique
+  order              Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method             PaymentMethod
+  amount             Decimal       @db.Decimal(10, 2)
+  status             PaymentStatus @default(PENDING)
+  qrImageUrl         String?
+  confirmedByAdminId String?
+  confirmedBy        Admin?        @relation(fields: [confirmedByAdminId], references: [id], onDelete: SetNull)
+  confirmedAt        DateTime?
+  createdAt          DateTime      @default(now())
+
+  @@index([status, method])
+  @@index([confirmedAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorAdminId String
+  actor        Admin    @relation(fields: [actorAdminId], references: [id], onDelete: Cascade)
+  action       String
+  targetId     String
+  /// Human-readable context, e.g. "customer Ravi (98xxxxxx)".
+  details      String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}

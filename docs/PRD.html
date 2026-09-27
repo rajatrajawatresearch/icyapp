@@ -1,0 +1,157 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>Mini marketplace app — Final requirements doc (v2)</h1>
+<p><strong>Scale target:</strong> first ~2000 users
+<strong>Model:</strong> private-link customers (no signup/login), admin lists products, cash or manual-UPI-QR payment.</p>
+<hr>
+<h2>1. Roles &amp; panels</h2>
+<h3>User panel (customer) — no login</h3>
+<ul>
+<li>Opens a <strong>personal link</strong> (<code>/u/&lt;token&gt;</code>) — no signup, no password, no OTP</li>
+<li>Browses products (name, price, image, stock)</li>
+<li>Adds to cart, places order</li>
+<li>Chooses fulfilment: <strong>Delivery</strong> (address) or <strong>Pickup</strong></li>
+<li>Chooses payment: <strong>Cash</strong> or <strong>UPI</strong></li>
+<li>If UPI: sees status go &quot;waiting for QR&quot; → &quot;QR ready, pay now&quot; → &quot;payment confirmed&quot;</li>
+<li>Sees own order history (scoped to their token, nothing else)</li>
+</ul>
+<h3>Admin panel (seller) — real login</h3>
+<ul>
+<li>CRUD products (name, price, stock, image, category, active/inactive)</li>
+<li><strong>Customer list:</strong> add a customer (name, phone) → system generates their private link → admin copies/shares it (WhatsApp) → can revoke/regenerate anytime</li>
+<li>Live incoming orders (poll-based badge/sound)</li>
+<li>For UPI orders: upload QR image against that order, mark &quot;sent&quot;</li>
+<li>Mark order <strong>paid</strong> (manual confirm), update status (confirmed → out for delivery/ready → completed → cancelled)</li>
+<li>Payment records list (cash vs UPI, date, order ref)</li>
+<li>Basic reports: today's orders, today's collection, pending UPI confirmations</li>
+</ul>
+<h3>Super admin panel — real login</h3>
+<ul>
+<li>Create/deactivate admin accounts</li>
+<li>Platform-wide totals: orders, revenue, cash vs UPI split</li>
+<li>Global settings: default pickup location, category master list</li>
+<li>Audit log: who marked which order paid, who generated/revoked which customer link</li>
+<li><strong>Delete data (with safety window):</strong> delete button on any customer/order/product row. Clicking it doesn't delete instantly — it schedules deletion after a chosen delay (<strong>1 to X minutes</strong>, super admin picks from a dropdown, e.g. 1 / 5 / 10 / 30 min). During that window the row is hidden but an <strong>Undo</strong> button can cancel it. After the timer runs out, it's permanently removed from the DB. This avoids &quot;oops, deleted the wrong thing&quot; with no way back.</li>
+</ul>
+<hr>
+<h2>2. Customer identity — private link, not login</h2>
+<p>This replaces traditional signup entirely:</p>
+<ul>
+<li>Every customer row has a unique <strong>token</strong> (random, unguessable — e.g. UUID or 12-char random string)</li>
+<li>Their link is <code>yourapp.com/u/&lt;token&gt;</code> — visiting it resolves to that customer server-side, no session/password needed</li>
+<li>Admin generates the link once when adding the customer, shares it manually</li>
+<li>Admin can <strong>revoke</strong> a token (link stops working) and <strong>regenerate</strong> a new one anytime — this is a manual action, not automatic rotation</li>
+<li>Token is checked server-side on every request to that customer's pages/orders — treat it like a bearer credential (long, random, HTTPS-only, not guessable), not a fully public URL</li>
+</ul>
+<p>This is intentionally simple for ~2000 known customers. It is <strong>not</strong> meant for public self-signup — if that's ever needed later, real auth (OTP/password) would replace this layer without touching the rest of the schema.</p>
+<hr>
+<h2>3. Payment flow</h2>
+<ul>
+<li><strong>Cash:</strong> order placed → admin marks paid on delivery/pickup → payment record created</li>
+<li><strong>UPI (as scoped for MVP):</strong> order placed (pending) → admin notified → admin uploads QR for that order → customer pays → admin manually marks paid → payment record created</li>
+</ul>
+<p>Flagged earlier and still true: manual QR-per-order is fine to launch with, but doesn't scale past a few dozen orders/day without becoming a bottleneck. DB below is built so a future upgrade (one static UPI ID + auto-generated amount/reference, no manual QR upload) is a swap inside <code>payments</code>, not a redesign.</p>
+<hr>
+<h2>4. Database schema</h2>
+<p><strong>customers</strong> — id, name, phone, token (unique, indexed), is_active, scheduled_delete_at (nullable), created_at</p>
+<p><strong>admins</strong> — id, name, phone/email, password_hash, role (admin/super_admin), created_at</p>
+<p><strong>products</strong> — id, admin_id, name, price, stock_qty, image_url, is_active, category, scheduled_delete_at (nullable)</p>
+<p><strong>orders</strong> — id, customer_id, status (placed/confirmed/paid/out_for_delivery/completed/cancelled), fulfilment_type (delivery/pickup), delivery_address (nullable), scheduled_delete_at (nullable), created_at</p>
+<p><strong>order_items</strong> — id, order_id, product_id, qty, price_at_order</p>
+<p><strong>payments</strong> — id, order_id, method (cash/upi), amount, status (pending/paid), qr_image_url (nullable), confirmed_by_admin_id, confirmed_at</p>
+<p><strong>notifications</strong> — id, admin_id, order_id, type (new_order/upi_pending), read_at</p>
+<p><strong>audit_log</strong> — id, actor_admin_id, action (e.g. &quot;regenerated_token&quot;, &quot;marked_paid&quot;), target_id, timestamp</p>
+<hr>
+<h2>5. Tech stack — final</h2>
+<p>Picked for one solo dev, fast to ship, no over-engineering for 2000 users:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Choice</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Platform</td>
+<td><strong>Mobile-first web app</strong> (not a native app)</td>
+<td>Customers open it via link in a mobile browser — no app store install needed. Built responsive so it feels like an app on phone, but it's just a website</td>
+</tr>
+<tr>
+<td>Frontend + Backend</td>
+<td><strong>Next.js (React + TypeScript)</strong></td>
+<td>One codebase, API routes double as backend — no separate server to deploy/manage</td>
+</tr>
+<tr>
+<td>Database</td>
+<td><strong>PostgreSQL</strong> (via Neon or Supabase, hosted)</td>
+<td>Free/cheap tier comfortably handles 2000 users; room to grow</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td><strong>Prisma</strong></td>
+<td>Type-safe queries, easy migrations, pairs well with Next.js</td>
+</tr>
+<tr>
+<td>Customer identity</td>
+<td><strong>Token-based route</strong> (<code>/u/&lt;token&gt;</code>) — no session cookie needed for customers</td>
+<td>Matches the no-login model above</td>
+</tr>
+<tr>
+<td>Admin/super-admin auth</td>
+<td><strong>Simple email+password</strong>, hashed (bcrypt), session cookie or JWT</td>
+<td>Only ~a handful of internal accounts, doesn't need to be fancy</td>
+</tr>
+<tr>
+<td>File storage (QR, product images)</td>
+<td><strong>Supabase Storage</strong> or <strong>Cloudinary</strong> free tier</td>
+<td>Simple upload API, no need to run your own S3</td>
+</tr>
+<tr>
+<td>Admin order notifications</td>
+<td><strong>Polling every 5-8s</strong> on the admin dashboard</td>
+<td>Simplest reliable option at this scale — skip WebSockets/Socket.io until order volume actually needs it</td>
+</tr>
+<tr>
+<td>Hosting</td>
+<td><strong>Vercel</strong> (Next.js app) + <strong>Neon/Supabase</strong> (Postgres)</td>
+<td>Both have free tiers sufficient for MVP; zero server management</td>
+</tr>
+</tbody>
+</table>
+<p>This whole stack avoids running your own backend server, a separate auth provider, or a message queue — all of which would be overkill at 2000 users and one dev.</p>
+<hr>
+<h2>6. API surface (rough)</h2>
+<ul>
+<li><code>GET /u/[token]</code> — resolve customer, show product list + their orders</li>
+<li><code>POST /api/orders</code> — create order (customer_id from token, items, fulfilment_type, payment method)</li>
+<li><code>GET /api/admin/orders</code> — list orders (polled)</li>
+<li><code>POST /api/admin/orders/:id/qr</code> — upload QR image for an order</li>
+<li><code>POST /api/admin/orders/:id/mark-paid</code> — confirm payment</li>
+<li><code>POST /api/admin/customers</code> — add customer, generate token</li>
+<li><code>POST /api/admin/customers/:id/regenerate-token</code> — revoke old link, issue new</li>
+<li><code>POST /api/admin/products</code> — CRUD products</li>
+<li><code>POST /api/superadmin/admins</code> — create/deactivate admin accounts</li>
+</ul>
+<hr>
+<h2>7. MVP build order</h2>
+<ol>
+<li>DB schema + Prisma setup</li>
+<li>Admin: add/edit products</li>
+<li>Admin: add customer → generate link</li>
+<li>Customer: open link → browse → place order (cash or UPI selection)</li>
+<li>Admin: see new order, upload QR (UPI), mark paid</li>
+<li>Order status updates, basic order history for customer</li>
+<li>Super admin: create admin accounts, view totals</li>
+</ol>
+<p>Analytics, audit log detail, and multi-store support are v3+.</p>
+<hr>
+<h2>8. Still open (your call)</h2>
+<ul>
+<li>One store/admin only for now, or plan for more later?</li>
+<li>Delivery — just collect address, or track a delivery person too?</li>
+<li>UPI — stick with manual QR (Option A here) for MVP, or jump straight to auto-generated UPI link (no manual QR) if you'd rather skip that step from day one?</li>
+</ul>
+
+</body></html>
