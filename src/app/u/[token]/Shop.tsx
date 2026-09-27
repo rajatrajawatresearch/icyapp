@@ -7,6 +7,8 @@ import type { ProductDTO } from "@/lib/dto";
 import { api, errorMessage } from "@/lib/client-api";
 import { inr } from "@/lib/format";
 import { btnPrimary, input, label } from "@/components/ui";
+import { InstallButton } from "@/components/InstallButton";
+import { ThemePicker } from "@/components/ThemePicker";
 
 type Cart = Record<string, number>; // productId -> qty
 
@@ -118,7 +120,7 @@ export function Shop({
 
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 pb-28">
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-gray-200 bg-surface/95 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Welcome back</p>
@@ -126,13 +128,17 @@ export function Shop({
               {customerName}
             </p>
           </div>
-          <Link
-            href={`/u/${token}/orders`}
-            className="rounded-full border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-800"
-          >
-            My orders
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemePicker />
+            <Link
+              href={`/u/${token}/orders`}
+              className="inline-flex h-9 items-center rounded-full border border-gray-300 bg-surface px-3 text-sm font-medium text-gray-800"
+            >
+              My orders
+            </Link>
+          </div>
         </div>
+        <InstallButton className="mt-3 w-full justify-center" />
         {categories.length > 1 && (
           <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
             {[null, ...categories].map((c) => (
@@ -142,7 +148,7 @@ export function Shop({
                 onClick={() => setCategory(c)}
                 className={`shrink-0 rounded-full px-3 py-1 text-sm ${
                   category === c
-                    ? "bg-sky-600 text-white"
+                    ? "bg-brand-600 text-white"
                     : "bg-gray-100 text-gray-700"
                 }`}
               >
@@ -165,7 +171,7 @@ export function Shop({
             return (
               <li
                 key={p.id}
-                className={`flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white ${soldOut ? "opacity-60" : ""}`}
+                className={`flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface ${soldOut ? "opacity-60" : ""}`}
               >
                 <div className="aspect-square bg-gray-100">
                   {p.imageUrl ? (
@@ -204,7 +210,7 @@ export function Shop({
                         type="button"
                         disabled={soldOut}
                         onClick={() => setQty(p.id, 1)}
-                        className="w-full rounded-lg bg-sky-600 py-2 text-sm font-medium text-white disabled:bg-gray-300"
+                        className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white disabled:bg-gray-300"
                       >
                         {soldOut ? "Sold out" : "Add"}
                       </button>
@@ -231,7 +237,7 @@ export function Shop({
               setError(null);
               setCheckoutOpen(true);
             }}
-            className="mx-auto flex w-full max-w-2xl items-center justify-between rounded-2xl bg-sky-600 px-5 py-4 text-white shadow-lg"
+            className="mx-auto flex w-full max-w-2xl items-center justify-between rounded-2xl bg-brand-600 px-5 py-4 text-white shadow-lg"
           >
             <span className="text-sm font-medium">
               {itemCount} item{itemCount === 1 ? "" : "s"} · {inr(total)}
@@ -249,7 +255,7 @@ export function Shop({
           <div
             role="dialog"
             aria-modal="true"
-            className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-2xl"
+            className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -385,7 +391,7 @@ function Stepper({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-sky-600 text-sky-700">
+    <div className="flex items-center justify-between rounded-lg border border-brand-600 text-brand-700">
       <button
         type="button"
         aria-label="Decrease"
@@ -425,7 +431,7 @@ function Choice({
       role="radio"
       aria-checked={checked}
       onClick={onClick}
-      className={`rounded-xl border p-3 text-left ${checked ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600" : "border-gray-300 bg-white"}`}
+      className={`rounded-xl border p-3 text-left ${checked ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600" : "border-gray-300 bg-surface"}`}
     >
       <span className="block text-sm font-medium text-gray-900">{title}</span>
       {sub && <span className="block text-xs text-gray-500">{sub}</span>}

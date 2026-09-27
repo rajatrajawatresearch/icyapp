@@ -170,8 +170,8 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
             onClick={() => setFilter(key)}
             className={`shrink-0 rounded-full border px-3 py-1 text-sm ${
               filter === key
-                ? "border-gray-900 bg-gray-900 text-white"
-                : "border-gray-300 bg-white text-gray-700"
+                ? "border-brand-600 bg-brand-600 text-white"
+                : "border-gray-300 bg-surface text-gray-700"
             }`}
           >
             {text}
@@ -319,7 +319,7 @@ function OrderCard({
             {o.customer.name} ·{" "}
             <a
               href={`tel:${o.customer.phone}`}
-              className="text-sky-700 underline"
+              className="text-brand-700 underline"
             >
               {o.customer.phone}
             </a>

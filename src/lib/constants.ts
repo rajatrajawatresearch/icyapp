@@ -42,7 +42,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatusValue, string> = {
 
 export const ORDER_STATUS_STYLE: Record<OrderStatusValue, string> = {
   PLACED: "bg-amber-100 text-amber-800",
-  CONFIRMED: "bg-sky-100 text-sky-800",
+  CONFIRMED: "bg-brand-100 text-brand-800",
   PAID: "bg-emerald-100 text-emerald-800",
   OUT_FOR_DELIVERY: "bg-indigo-100 text-indigo-800",
   COMPLETED: "bg-gray-200 text-gray-700",

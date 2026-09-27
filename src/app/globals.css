@@ -1,16 +1,188 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Theming: components use normal Tailwind names (gray-*, red-*, brand-*,
+ * bg-surface). Light/dark and the accent colour only swap CSS variables on
+ * <html data-theme data-accent>, set before paint by the script in layout.tsx.
+ */
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
 }
 
 :root {
   color-scheme: light;
+  --page: #f5f7fb;
+  --surface: #ffffff;
+  /* Brand shades are derived from one accent colour. --tone is what the
+     darker "text" shades mix toward: black in light mode, white in dark. */
+  --tone: #000000;
+  --brand: #2563eb;
+}
+
+:root[data-accent="green"] {
+  --brand: #059669;
+}
+:root[data-accent="purple"] {
+  --brand: #7c3aed;
+}
+:root[data-accent="pink"] {
+  --brand: #db2777;
+}
+
+:root {
+  --brand-50: color-mix(in oklab, var(--brand) 8%, var(--surface));
+  --brand-100: color-mix(in oklab, var(--brand) 15%, var(--surface));
+  --brand-200: color-mix(in oklab, var(--brand) 30%, var(--surface));
+  --brand-300: color-mix(in oklab, var(--brand) 48%, var(--surface));
+  --brand-400: color-mix(in oklab, var(--brand) 72%, var(--surface));
+  --brand-500: color-mix(in oklab, var(--brand) 88%, var(--surface));
+  --brand-600: var(--brand);
+  --brand-700: color-mix(in oklab, var(--brand) 80%, var(--tone));
+  --brand-800: color-mix(in oklab, var(--brand) 62%, var(--tone));
+  --brand-900: color-mix(in oklab, var(--brand) 48%, var(--tone));
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0a0f1a;
+  --surface: #131b2b;
+  --tone: #ffffff;
+
+  /* Inverted neutral scale: "gray-900" text becomes near-white, etc. */
+  --color-gray-50: #172031;
+  --color-gray-100: #1d2739;
+  --color-gray-200: #283349;
+  --color-gray-300: #36435c;
+  --color-gray-400: #5d6b84;
+  --color-gray-500: #8795ac;
+  --color-gray-600: #a8b3c6;
+  --color-gray-700: #c3ccda;
+  --color-gray-800: #dce2ec;
+  --color-gray-900: #f1f4f9;
+
+  /* Status tints: dark backgrounds, light text. 500/600 stay as-is for solid buttons. */
+  --color-red-50: color-mix(in oklab, var(--color-red-500) 12%, var(--surface));
+  --color-red-100: color-mix(
+    in oklab,
+    var(--color-red-500) 22%,
+    var(--surface)
+  );
+  --color-red-200: color-mix(
+    in oklab,
+    var(--color-red-500) 35%,
+    var(--surface)
+  );
+  --color-red-300: color-mix(
+    in oklab,
+    var(--color-red-500) 50%,
+    var(--surface)
+  );
+  --color-red-700: color-mix(in oklab, var(--color-red-500) 45%, white);
+  --color-red-800: color-mix(in oklab, var(--color-red-500) 35%, white);
+  --color-red-900: color-mix(in oklab, var(--color-red-500) 25%, white);
+
+  --color-emerald-50: color-mix(
+    in oklab,
+    var(--color-emerald-500) 12%,
+    var(--surface)
+  );
+  --color-emerald-100: color-mix(
+    in oklab,
+    var(--color-emerald-500) 22%,
+    var(--surface)
+  );
+  --color-emerald-200: color-mix(
+    in oklab,
+    var(--color-emerald-500) 35%,
+    var(--surface)
+  );
+  --color-emerald-300: color-mix(
+    in oklab,
+    var(--color-emerald-500) 50%,
+    var(--surface)
+  );
+  --color-emerald-700: color-mix(in oklab, var(--color-emerald-500) 45%, white);
+  --color-emerald-800: color-mix(in oklab, var(--color-emerald-500) 35%, white);
+  --color-emerald-900: color-mix(in oklab, var(--color-emerald-500) 25%, white);
+
+  --color-amber-50: color-mix(
+    in oklab,
+    var(--color-amber-500) 12%,
+    var(--surface)
+  );
+  --color-amber-100: color-mix(
+    in oklab,
+    var(--color-amber-500) 22%,
+    var(--surface)
+  );
+  --color-amber-200: color-mix(
+    in oklab,
+    var(--color-amber-500) 35%,
+    var(--surface)
+  );
+  --color-amber-300: color-mix(
+    in oklab,
+    var(--color-amber-500) 50%,
+    var(--surface)
+  );
+  --color-amber-700: color-mix(in oklab, var(--color-amber-500) 45%, white);
+  --color-amber-800: color-mix(in oklab, var(--color-amber-500) 35%, white);
+  --color-amber-900: color-mix(in oklab, var(--color-amber-500) 25%, white);
+
+  --color-orange-50: color-mix(
+    in oklab,
+    var(--color-orange-500) 12%,
+    var(--surface)
+  );
+  --color-orange-100: color-mix(
+    in oklab,
+    var(--color-orange-500) 22%,
+    var(--surface)
+  );
+  --color-orange-300: color-mix(
+    in oklab,
+    var(--color-orange-500) 50%,
+    var(--surface)
+  );
+  --color-orange-600: color-mix(in oklab, var(--color-orange-500) 70%, white);
+  --color-orange-800: color-mix(in oklab, var(--color-orange-500) 35%, white);
+
+  --color-indigo-100: color-mix(
+    in oklab,
+    var(--color-indigo-500) 22%,
+    var(--surface)
+  );
+  --color-indigo-800: color-mix(in oklab, var(--color-indigo-500) 35%, white);
+}
+
+html {
+  background: var(--page);
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--page);
+  color: var(--color-gray-900);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Installed-app feel: no pull-to-refresh bounce fighting the sticky headers. */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
 }

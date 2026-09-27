@@ -3,8 +3,9 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const SUPER_ADMIN_EMAIL = "admin@test.com";
-const SUPER_ADMIN_PASSWORD = "changeme123";
+// Local defaults from the build brief; override both for any public deployment.
+const SUPER_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@test.com";
+const SUPER_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "changeme123";
 
 async function main() {
   const passwordHash = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10);
@@ -22,7 +23,11 @@ async function main() {
 
   console.log("\n✅ Seeded SUPER_ADMIN account");
   console.log(`   email:    ${SUPER_ADMIN_EMAIL}`);
-  console.log(`   password: ${SUPER_ADMIN_PASSWORD}`);
+  // Only echo the password when it's the well-known local default.
+  const shownPassword = process.env.SEED_ADMIN_PASSWORD
+    ? "(from SEED_ADMIN_PASSWORD)"
+    : SUPER_ADMIN_PASSWORD;
+  console.log(`   password: ${shownPassword}`);
   console.log("   login at: /admin/login\n");
 }
 

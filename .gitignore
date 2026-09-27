@@ -45,3 +45,6 @@ next-env.d.ts
 # user uploads (QR codes, product photos)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# local-only deployment credentials
+.credentials.local

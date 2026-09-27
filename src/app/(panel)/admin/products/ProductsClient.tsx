@@ -239,7 +239,7 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
           <label className="flex items-center gap-2 text-sm text-gray-800">
             <input
               type="checkbox"
-              className="h-4 w-4 accent-sky-600"
+              className="h-4 w-4 accent-brand-600"
               checked={form.isActive}
               onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
             />
