@@ -12,7 +12,7 @@
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
-    "vercel-build": "prisma generate && DATABASE_URL=\"${DATABASE_URL_UNPOOLED:-$DATABASE_URL}\" prisma migrate deploy && next build"
+    "vercel-build": "prisma generate && DATABASE_URL=\"${DATABASE_URL_UNPOOLED:-$DATABASE_URL}\" prisma migrate deploy && (test -z \"$SEED_ADMIN_PASSWORD\" || prisma db seed) && next build"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

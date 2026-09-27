@@ -1,0 +1,11 @@
+# Never upload local secrets or local-only files with `vercel deploy`
+.env
+.env.*
+.credentials.local
+*.local.txt
+public/uploads/*
+!public/uploads/.gitkeep
+docs/
+.agents/
+.claude/
+skills-lock.json
