@@ -64,6 +64,9 @@ export function DeleteButton({
               <span className="font-medium text-gray-900">{name}</span> will be
               hidden now and permanently deleted when the timer runs out. You
               can undo until then.
+              {entity === "customer" &&
+                " Their link stops working immediately; past orders are kept for your records."}
+              {entity === "product" && " Past orders that include it are kept."}
             </p>
             <label className={`${labelCls} mt-4`} htmlFor={`delay-${id}`}>
               Delete in

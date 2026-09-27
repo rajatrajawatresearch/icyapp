@@ -43,7 +43,8 @@ export type OrderDTO = {
   scheduledDeleteAt: string | null;
   createdAt: string;
   total: number;
-  customer: { id: string; name: string; phone: string };
+  /** id is null once the customer has been permanently deleted. */
+  customer: { id: string | null; name: string; phone: string };
   items: {
     id: string;
     productName: string;
@@ -98,7 +99,6 @@ export function toCustomerDTO(
 
 export const orderInclude = {
   items: { orderBy: { id: "asc" } },
-  customer: { select: { id: true, name: true, phone: true } },
   payment: { include: { confirmedBy: { select: { name: true } } } },
 } satisfies Prisma.OrderInclude;
 
@@ -122,7 +122,7 @@ export function toOrderDTO(
     total: o.payment
       ? Number(o.payment.amount)
       : items.reduce((s, i) => s + i.qty * i.priceAtOrder, 0),
-    customer: o.customer,
+    customer: { id: o.customerId, name: o.customerName, phone: o.customerPhone },
     items,
     payment: o.payment
       ? {

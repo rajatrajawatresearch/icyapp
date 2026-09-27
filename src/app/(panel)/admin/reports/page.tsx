@@ -61,9 +61,7 @@ export default async function ReportsPage() {
       orderBy: { confirmedAt: "desc" },
       take: 20,
       include: {
-        order: {
-          select: { number: true, customer: { select: { name: true } } },
-        },
+        order: { select: { number: true, customerName: true } },
         confirmedBy: { select: { name: true } },
       },
     }),
@@ -182,7 +180,7 @@ export default async function ReportsPage() {
               {recentPayments.map((p) => (
                 <tr key={p.id}>
                   <td className="px-3 py-2 font-medium">#{p.order.number}</td>
-                  <td className="px-3 py-2">{p.order.customer.name}</td>
+                  <td className="px-3 py-2">{p.order.customerName}</td>
                   <td className="px-3 py-2">{p.method}</td>
                   <td className="px-3 py-2 text-right tabular-nums">
                     {inr(Number(p.amount))}

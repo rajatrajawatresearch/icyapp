@@ -86,6 +86,8 @@ export async function POST(req: Request) {
       return tx.order.create({
         data: {
           customerId: customer.id,
+          customerName: customer.name,
+          customerPhone: customer.phone,
           fulfilmentType,
           deliveryAddress:
             fulfilmentType === "DELIVERY" ? body.data.deliveryAddress : null,

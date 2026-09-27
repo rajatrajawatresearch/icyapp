@@ -85,8 +85,12 @@ model Order {
   id                String         @id @default(cuid())
   /// Human-friendly order reference shown as "#12"
   number            Int            @unique @default(autoincrement())
-  customerId        String
-  customer          Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// Nullable so purging a customer keeps their orders (and revenue history).
+  customerId        String?
+  customer          Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  /// Snapshot of who ordered, still shown after the customer is deleted.
+  customerName      String
+  customerPhone     String
   status            OrderStatus    @default(PLACED)
   fulfilmentType    FulfilmentType
   deliveryAddress   String?

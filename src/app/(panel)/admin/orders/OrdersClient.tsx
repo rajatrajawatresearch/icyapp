@@ -85,7 +85,7 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch + polling
+     
     load();
     const t = setInterval(() => {
       if (document.visibilityState === "visible") load();

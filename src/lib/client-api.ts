@@ -28,6 +28,8 @@ export async function api<T = unknown>(
     res.status === 401 &&
     (url.startsWith("/api/admin") || url.startsWith("/api/superadmin"))
   ) {
+    // Hard navigation on purpose: session expired, drop all client state.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/admin/login";
   }
   if (!res.ok)
