@@ -9,6 +9,9 @@ import { inr } from "@/lib/format";
 import { btnPrimary, input, label } from "@/components/ui";
 import { InstallButton } from "@/components/InstallButton";
 import { ThemePicker } from "@/components/ThemePicker";
+import { LocationPicker } from "@/components/map/LocationPicker";
+import { PickupCard, type Pickup } from "@/components/map/PickupCard";
+import type { LatLng } from "@/lib/maps";
 
 type Cart = Record<string, number>; // productId -> qty
 
@@ -19,11 +22,13 @@ function cartKey(token: string) {
 export function Shop({
   token,
   customerName,
+  pickup,
   products,
 }: {
   token: string;
   customerName: string;
   products: ProductDTO[];
+  pickup: Pickup;
 }) {
   const router = useRouter();
   const [cart, setCart] = useState<Cart>({});
@@ -33,6 +38,7 @@ export function Shop({
     "DELIVERY",
   );
   const [address, setAddress] = useState("");
+  const [pin, setPin] = useState<LatLng | null>(null);
   const [payment, setPayment] = useState<"CASH" | "UPI">("CASH");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +108,8 @@ export function Shop({
           items: lines.map((l) => ({ productId: l.product.id, qty: l.qty })),
           fulfilmentType: fulfilment,
           deliveryAddress: fulfilment === "DELIVERY" ? address : undefined,
+          deliveryLat: fulfilment === "DELIVERY" ? pin?.lat : undefined,
+          deliveryLng: fulfilment === "DELIVERY" ? pin?.lng : undefined,
           paymentMethod: payment,
         },
       });
@@ -317,8 +325,19 @@ export function Shop({
                 />
               </div>
             </fieldset>
-            {fulfilment === "DELIVERY" && (
+            {fulfilment === "PICKUP" && (
               <div className="mt-3">
+                <PickupCard pickup={pickup} />
+              </div>
+            )}
+            {fulfilment === "DELIVERY" && (
+              <div className="mt-3 space-y-3">
+                <LocationPicker
+                  value={pin}
+                  onChange={setPin}
+                  onAddress={(a) => setAddress((cur) => (cur.trim() ? cur : a))}
+                  near={pickup.lat !== null && pickup.lng !== null ? { lat: pickup.lat, lng: pickup.lng } : null}
+                />
                 <label className={label} htmlFor="address">
                   Delivery address
                 </label>
@@ -326,7 +345,7 @@ export function Shop({
                   id="address"
                   rows={3}
                   className={input}
-                  placeholder="House no, street, landmark"
+                  placeholder="Flat / house no, building, street, landmark"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                 />

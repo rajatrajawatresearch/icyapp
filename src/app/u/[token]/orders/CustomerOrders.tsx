@@ -8,6 +8,7 @@ import { api } from "@/lib/client-api";
 import { formatDateTime, inr } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ThemePicker } from "@/components/ThemePicker";
+import { PickupCard, type Pickup } from "@/components/map/PickupCard";
 
 const STEPS = ["PLACED", "CONFIRMED", "OUT_FOR_DELIVERY", "COMPLETED"] as const;
 
@@ -15,10 +16,12 @@ export function CustomerOrders({
   token,
   initialOrders,
   placedNumber,
+  pickup,
 }: {
   token: string;
   initialOrders: OrderDTO[];
   placedNumber: number | null;
+  pickup: Pickup;
 }) {
   const [orders, setOrders] = useState(initialOrders);
   const [linkDead, setLinkDead] = useState(false);
@@ -79,7 +82,7 @@ export function CustomerOrders({
       ) : (
         <ul className="space-y-3 p-4">
           {orders.map((o) => (
-            <OrderCard key={o.id} order={o} />
+            <OrderCard key={o.id} order={o} pickup={pickup} />
           ))}
         </ul>
       )}
@@ -87,7 +90,7 @@ export function CustomerOrders({
   );
 }
 
-function OrderCard({ order: o }: { order: OrderDTO }) {
+function OrderCard({ order: o, pickup }: { order: OrderDTO; pickup: Pickup }) {
   const pay = o.payment;
   const cancelled = o.status === "CANCELLED";
   const stepIndex = STEPS.indexOf(
@@ -134,6 +137,12 @@ function OrderCard({ order: o }: { order: OrderDTO }) {
           <span className="tabular-nums">{inr(o.total)}</span>
         </li>
       </ul>
+
+      {o.fulfilmentType === "PICKUP" && !cancelled && o.status !== "COMPLETED" && (
+        <div className="mt-3 rounded-lg bg-gray-50 p-3">
+          <PickupCard pickup={pickup} showMap={false} />
+        </div>
+      )}
 
       {pay && !cancelled && (
         <PaymentPanel payment={pay} fulfilment={o.fulfilmentType} />

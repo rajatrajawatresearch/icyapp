@@ -10,6 +10,7 @@ import {
 } from "@/lib/constants";
 import { api, errorMessage } from "@/lib/client-api";
 import { inr, timeAgo } from "@/lib/format";
+import { googleDirectionsUrl } from "@/lib/maps";
 import { DeleteButton } from "@/components/DeleteButton";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { PaymentBadge, StatusBadge } from "@/components/StatusBadge";
@@ -355,7 +356,18 @@ function OrderCard({
         ) : (
           <>
             <span className="font-medium">🚚 Delivery:</span>{" "}
-            {o.deliveryAddress}
+            {o.deliveryAddress}{" "}
+            <a
+              href={googleDirectionsUrl(
+                o.deliveryLat !== null && o.deliveryLng !== null ? { lat: o.deliveryLat, lng: o.deliveryLng } : null,
+                o.deliveryAddress,
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="whitespace-nowrap font-medium text-brand-700 underline"
+            >
+              📍 Open in Maps{o.deliveryLat !== null ? "" : " (address)"}
+            </a>
           </>
         )}
       </p>

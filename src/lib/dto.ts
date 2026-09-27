@@ -40,6 +40,8 @@ export type OrderDTO = {
   status: OrderStatusValue;
   fulfilmentType: "DELIVERY" | "PICKUP";
   deliveryAddress: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   scheduledDeleteAt: string | null;
   createdAt: string;
   total: number;
@@ -117,6 +119,8 @@ export function toOrderDTO(
     status: o.status,
     fulfilmentType: o.fulfilmentType,
     deliveryAddress: o.deliveryAddress,
+    deliveryLat: o.deliveryLat,
+    deliveryLng: o.deliveryLng,
     scheduledDeleteAt: iso(o.scheduledDeleteAt),
     createdAt: o.createdAt.toISOString(),
     total: o.payment

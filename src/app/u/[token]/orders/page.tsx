@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { resolveCustomer } from "@/lib/customer";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { getPickupLocation } from "@/lib/settings";
 import { CustomerOrders } from "./CustomerOrders";
 
 export const metadata: Metadata = {
@@ -22,18 +23,22 @@ export default async function CustomerOrdersPage({
   const customer = await resolveCustomer(token);
   if (!customer) notFound();
 
-  const orders = await prisma.order.findMany({
-    where: { customerId: customer.id, scheduledDeleteAt: null },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: orderInclude,
-  });
+  const [orders, pickup] = await Promise.all([
+    prisma.order.findMany({
+      where: { customerId: customer.id, scheduledDeleteAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: orderInclude,
+    }),
+    getPickupLocation(),
+  ]);
 
   return (
     <CustomerOrders
       token={token}
       initialOrders={orders.map(toOrderDTO)}
       placedNumber={placed ? Number(placed) : null}
+      pickup={pickup}
     />
   );
 }

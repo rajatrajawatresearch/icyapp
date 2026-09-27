@@ -19,6 +19,8 @@ const CreateOrderSchema = z
       .max(100),
     fulfilmentType: z.enum(["DELIVERY", "PICKUP"]),
     deliveryAddress: z.string().trim().max(500).optional(),
+    deliveryLat: z.number().min(-90).max(90).optional(),
+    deliveryLng: z.number().min(-180).max(180).optional(),
     paymentMethod: z.enum(["CASH", "UPI"]),
   })
   .refine(
@@ -91,6 +93,13 @@ export async function POST(req: Request) {
           fulfilmentType,
           deliveryAddress:
             fulfilmentType === "DELIVERY" ? body.data.deliveryAddress : null,
+          // Pin is optional (GPS/map); only kept when both coords are present.
+          ...(fulfilmentType === "DELIVERY" &&
+            body.data.deliveryLat !== undefined &&
+            body.data.deliveryLng !== undefined && {
+              deliveryLat: body.data.deliveryLat,
+              deliveryLng: body.data.deliveryLng,
+            }),
           items: {
             create: products.map((p) => ({
               productId: p.id,

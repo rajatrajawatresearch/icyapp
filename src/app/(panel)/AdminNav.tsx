@@ -14,6 +14,7 @@ const ADMIN_LINKS = [
 const SUPER_LINKS = [
   { href: "/superadmin/admins", label: "Admins" },
   { href: "/superadmin/audit-log", label: "Audit log" },
+  { href: "/superadmin/settings", label: "Settings" },
 ];
 
 export function AdminNav({

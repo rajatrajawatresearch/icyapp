@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { resolveCustomer } from "@/lib/customer";
 import { toProductDTO } from "@/lib/dto";
+import { getPickupLocation } from "@/lib/settings";
 import { Shop } from "./Shop";
 
 export const metadata: Metadata = { title: "Shop", referrer: "no-referrer" };
@@ -16,16 +17,20 @@ export default async function CustomerShopPage({
   const customer = await resolveCustomer(token);
   if (!customer) notFound();
 
-  const products = await prisma.product.findMany({
-    where: { isActive: true, scheduledDeleteAt: null },
-    orderBy: [{ category: "asc" }, { name: "asc" }],
-  });
+  const [products, pickup] = await Promise.all([
+    prisma.product.findMany({
+      where: { isActive: true, scheduledDeleteAt: null },
+      orderBy: [{ category: "asc" }, { name: "asc" }],
+    }),
+    getPickupLocation(),
+  ]);
 
   return (
     <Shop
       token={token}
       customerName={customer.name}
       products={products.map(toProductDTO)}
+      pickup={pickup}
     />
   );
 }

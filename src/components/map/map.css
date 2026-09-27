@@ -1,0 +1,28 @@
+/* Map pin + dark-mode tiles for LeafletMap (OpenStreetMap raster tiles). */
+
+.mm-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--brand, #2563eb);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+  transform: rotate(-45deg);
+}
+
+.mm-pin::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.leaflet-container {
+  font: inherit;
+  background: var(--color-gray-100, #eef0f4);
+}
+
+[data-theme="dark"] .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}

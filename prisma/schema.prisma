@@ -94,6 +94,9 @@ model Order {
   status            OrderStatus    @default(PLACED)
   fulfilmentType    FulfilmentType
   deliveryAddress   String?
+  /// Pin dropped by the customer (current location / map search), for Google Maps directions.
+  deliveryLat       Float?
+  deliveryLng       Float?
   scheduledDeleteAt DateTime?
   createdAt         DateTime       @default(now())
   items             OrderItem[]
@@ -147,4 +150,13 @@ model AuditLog {
   createdAt    DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// Single-row store configuration (id is always 1), edited by the super admin.
+model StoreSettings {
+  id            Int      @id @default(1)
+  pickupAddress String?
+  pickupLat     Float?
+  pickupLng     Float?
+  updatedAt     DateTime @updatedAt
 }
