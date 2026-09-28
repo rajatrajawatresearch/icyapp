@@ -17,11 +17,11 @@ export function LoginForm() {
     setBusy(true);
     setError(null);
     try {
-      await api("/api/auth/login", {
+      const { role } = await api<{ role: string }>("/api/auth/login", {
         method: "POST",
         json: { email, password },
       });
-      router.replace("/admin/orders");
+      router.replace(role === "DELIVERY" ? "/delivery" : "/admin/orders");
       router.refresh();
     } catch (err) {
       setError(errorMessage(err));

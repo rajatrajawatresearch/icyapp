@@ -138,6 +138,12 @@ function OrderCard({ order: o, pickup }: { order: OrderDTO; pickup: Pickup }) {
         </li>
       </ul>
 
+      {o.deliveryPartner && o.status === "OUT_FOR_DELIVERY" && (
+        <p className="mt-3 rounded-lg bg-indigo-100 p-3 text-sm font-medium text-indigo-800">
+          🛵 {o.deliveryPartner.name} is on the way with your order
+        </p>
+      )}
+
       {o.fulfilmentType === "PICKUP" && !cancelled && o.status !== "COMPLETED" && (
         <div className="mt-3 rounded-lg bg-gray-50 p-3">
           <PickupCard pickup={pickup} showMap={false} />

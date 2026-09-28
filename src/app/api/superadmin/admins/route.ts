@@ -21,7 +21,7 @@ const CreateAdminSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(200),
-  role: z.enum(["ADMIN", "SUPER_ADMIN"]).default("ADMIN"),
+  role: z.enum(["ADMIN", "SUPER_ADMIN", "DELIVERY"]).default("ADMIN"),
 });
 
 /** POST /api/superadmin/admins — create an admin account. */

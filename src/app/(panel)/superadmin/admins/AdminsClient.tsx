@@ -77,7 +77,7 @@ export function AdminsClient({ myId }: { myId: string }) {
 
   return (
     <div>
-      <h1 className={pageTitle}>Admin accounts</h1>
+      <h1 className={pageTitle}>Team accounts</h1>
 
       <form
         onSubmit={create}
@@ -137,6 +137,7 @@ export function AdminsClient({ myId }: { myId: string }) {
           >
             <option value="ADMIN">Admin</option>
             <option value="SUPER_ADMIN">Super admin</option>
+            <option value="DELIVERY">Delivery partner</option>
           </select>
         </div>
         {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
@@ -166,7 +167,7 @@ export function AdminsClient({ myId }: { myId: string }) {
               </p>
               <p className="truncate text-sm text-gray-600">{a.email}</p>
               <p className="text-xs text-gray-500">
-                {a.role === "SUPER_ADMIN" ? "Super admin" : "Admin"} · added{" "}
+                {a.role === "SUPER_ADMIN" ? "Super admin" : a.role === "DELIVERY" ? "🛵 Delivery partner" : "Admin"} · added{" "}
                 {formatDateTime(a.createdAt)}
                 {!a.isActive && " · Deactivated"}
               </p>

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui";
 
 type Filter = "open" | "upi" | "all";
+type Partner = { id: string; name: string };
 
 /** Short two-tone chime via WebAudio — no asset needed. */
 function chime() {
@@ -54,6 +55,7 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [lastSync, setLastSync] = useState<number | null>(null);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const seenIds = useRef<Set<string> | null>(null);
   const now = useNow(5000);
 
@@ -86,8 +88,10 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   }, []);
 
   useEffect(() => {
-     
     load();
+    api<{ items: Partner[] }>("/api/admin/delivery-partners")
+      .then((d) => setPartners(d.items))
+      .catch(() => {});
     const t = setInterval(() => {
       if (document.visibilityState === "visible") load();
     }, POLL_INTERVAL_MS);
@@ -201,6 +205,7 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
               onUpdated={replaceOrder}
               onAcknowledge={() => acknowledge(o.id)}
               onDeleted={load}
+              partners={partners}
             />
           ))}
         </ul>
@@ -229,6 +234,7 @@ function OrderCard({
   onUpdated,
   onAcknowledge,
   onDeleted,
+  partners,
 }: {
   order: OrderDTO;
   isNew: boolean;
@@ -237,6 +243,7 @@ function OrderCard({
   onUpdated: (o: OrderDTO) => void;
   onAcknowledge: () => void;
   onDeleted: () => void;
+  partners: Partner[];
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +263,15 @@ function OrderCard({
     } finally {
       setBusy(null);
     }
+  }
+
+  function assign(deliveryPartnerId: string) {
+    run("assign", () =>
+      api<OrderDTO>(`/api/admin/orders/${o.id}/assign`, {
+        method: "POST",
+        json: { deliveryPartnerId: deliveryPartnerId || null },
+      }),
+    );
   }
 
   function changeStatus(status: string) {
@@ -371,6 +387,12 @@ function OrderCard({
           </>
         )}
       </p>
+      {o.deliveryPartner && (
+        <p className="mt-1 text-sm text-gray-700">
+          🛵 Delivery partner: <span className="font-medium">{o.deliveryPartner.name}</span>
+          {o.deliveredAt && " · delivered"}
+        </p>
+      )}
 
       {pay?.method === "UPI" && (
         <div className="mt-3 flex items-center gap-3 rounded-lg bg-gray-50 p-2">
@@ -420,6 +442,27 @@ function OrderCard({
             </option>
           ))}
         </select>
+
+        {o.fulfilmentType === "DELIVERY" && !closed && o.status !== "COMPLETED" && (
+          <select
+            aria-label="Delivery partner"
+            className={`${input} w-auto py-1.5`}
+            value={o.deliveryPartner?.id ?? ""}
+            disabled={busy !== null}
+            onChange={(e) => assign(e.target.value)}
+          >
+            <option value="">{partners.length ? "🛵 Assign delivery…" : "🛵 No delivery partners yet"}</option>
+            {/* Keep a deactivated-but-assigned partner visible so the select shows the truth. */}
+            {o.deliveryPartner && !partners.some((p) => p.id === o.deliveryPartner!.id) && (
+              <option value={o.deliveryPartner.id}>{o.deliveryPartner.name}</option>
+            )}
+            {partners.map((p) => (
+              <option key={p.id} value={p.id}>
+                🛵 {p.name}
+              </option>
+            ))}
+          </select>
+        )}
 
         {upiPending && (
           <>

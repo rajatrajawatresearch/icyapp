@@ -72,11 +72,38 @@ export function isSuperAdmin(admin: SessionAdmin) {
   return admin.role === "SUPER_ADMIN";
 }
 
+export function isDelivery(admin: { role: Role }) {
+  return admin.role === "DELIVERY";
+}
+
+/** Where each role lands after signing in. */
+export function homePathFor(role: Role) {
+  return role === "DELIVERY" ? "/delivery" : "/admin/orders";
+}
+
+type Access = {
+  /** Only SUPER_ADMIN. */
+  superOnly?: boolean;
+  /** Let delivery partners through too (e.g. change own password). Store pages exclude them by default. */
+  allowDelivery?: boolean;
+  /** Only delivery partners (the /delivery panel). */
+  deliveryOnly?: boolean;
+};
+
+function denial(admin: SessionAdmin, opts?: Access): { status: 403; error: string; home: string } | null {
+  const home = homePathFor(admin.role);
+  if (opts?.deliveryOnly) return isDelivery(admin) ? null : { status: 403, error: "Delivery partners only", home };
+  if (isDelivery(admin) && !opts?.allowDelivery) return { status: 403, error: "Store staff only", home };
+  if (opts?.superOnly && !isSuperAdmin(admin)) return { status: 403, error: "Super admin only", home };
+  return null;
+}
+
 /** For server components/layouts: redirects instead of returning null. */
-export async function requireAdminPage(opts?: { superOnly?: boolean }) {
+export async function requireAdminPage(opts?: Access) {
   const admin = await getSessionAdmin();
   if (!admin) redirect("/admin/login");
-  if (opts?.superOnly && !isSuperAdmin(admin)) redirect("/admin/orders");
+  const denied = denial(admin, opts);
+  if (denied) redirect(denied.home);
   return admin;
 }
 
@@ -85,9 +112,7 @@ type ApiAuth =
   | { ok: false; res: NextResponse };
 
 /** For route handlers: returns a 401/403 response to send back on failure. */
-export async function requireAdminApi(opts?: {
-  superOnly?: boolean;
-}): Promise<ApiAuth> {
+export async function requireAdminApi(opts?: Access): Promise<ApiAuth> {
   const admin = await getSessionAdmin();
   if (!admin) {
     return {
@@ -95,11 +120,9 @@ export async function requireAdminApi(opts?: {
       res: NextResponse.json({ error: "Not signed in" }, { status: 401 }),
     };
   }
-  if (opts?.superOnly && !isSuperAdmin(admin)) {
-    return {
-      ok: false,
-      res: NextResponse.json({ error: "Super admin only" }, { status: 403 }),
-    };
+  const denied = denial(admin, opts);
+  if (denied) {
+    return { ok: false, res: NextResponse.json({ error: denied.error }, { status: denied.status }) };
   }
   return { ok: true, admin };
 }

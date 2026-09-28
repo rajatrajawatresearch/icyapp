@@ -1,0 +1,56 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { prisma } from "@/lib/db";
+import { requireAdminApi } from "@/lib/auth";
+import { jsonError, parseJson } from "@/lib/api";
+import { audit } from "@/lib/audit";
+import { orderInclude, toOrderDTO } from "@/lib/dto";
+
+const AssignSchema = z.object({
+  deliveryPartnerId: z.string().min(1).nullable(),
+});
+
+/** POST /api/admin/orders/:id/assign — give a delivery order to a partner (null = unassign). */
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const auth = await requireAdminApi();
+  if (!auth.ok) return auth.res;
+  const { id } = await params;
+  const body = await parseJson(req, AssignSchema);
+  if (!body.ok) return body.res;
+  const { deliveryPartnerId } = body.data;
+
+  const order = await prisma.order.findFirst({
+    where: { id, scheduledDeleteAt: null },
+  });
+  if (!order) return jsonError("Order not found", 404);
+  if (order.fulfilmentType !== "DELIVERY")
+    return jsonError("Only delivery orders can be assigned");
+  if (order.status === "COMPLETED" || order.status === "CANCELLED")
+    return jsonError("This order is already closed");
+
+  let partnerName = "nobody";
+  if (deliveryPartnerId) {
+    const partner = await prisma.admin.findFirst({
+      where: { id: deliveryPartnerId, role: "DELIVERY", isActive: true },
+    });
+    if (!partner)
+      return jsonError("That delivery partner isn't available", 404);
+    partnerName = partner.name;
+  }
+
+  await prisma.order.update({ where: { id }, data: { deliveryPartnerId } });
+  await audit(
+    auth.admin.id,
+    deliveryPartnerId ? "assigned_delivery" : "unassigned_delivery",
+    id,
+    `order #${order.number} → ${partnerName}`,
+  );
+  const fresh = await prisma.order.findUniqueOrThrow({
+    where: { id },
+    include: orderInclude,
+  });
+  return NextResponse.json(toOrderDTO(fresh));
+}

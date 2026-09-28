@@ -16,7 +16,7 @@ const ChangePasswordSchema = z.object({
 
 /** POST /api/auth/password — signed-in admin changes their own password. */
 export async function POST(req: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ allowDelivery: true });
   if (!auth.ok) return auth.res;
   const body = await parseJson(req, ChangePasswordSchema);
   if (!body.ok) return body.res;

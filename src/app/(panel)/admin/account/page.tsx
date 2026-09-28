@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireAdminPage } from "@/lib/auth";
 import { card, pageTitle } from "@/components/ui";
-import { ChangePasswordForm } from "./ChangePasswordForm";
+import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 
 export const metadata: Metadata = { title: "My account" };
 

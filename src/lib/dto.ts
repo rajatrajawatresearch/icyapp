@@ -42,6 +42,8 @@ export type OrderDTO = {
   deliveryAddress: string | null;
   deliveryLat: number | null;
   deliveryLng: number | null;
+  deliveryPartner: { id: string; name: string } | null;
+  deliveredAt: string | null;
   scheduledDeleteAt: string | null;
   createdAt: string;
   total: number;
@@ -60,7 +62,7 @@ export type AdminDTO = {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "SUPER_ADMIN";
+  role: "ADMIN" | "SUPER_ADMIN" | "DELIVERY";
   isActive: boolean;
   createdAt: string;
 };
@@ -100,6 +102,7 @@ export function toCustomerDTO(
 }
 
 export const orderInclude = {
+  deliveryPartner: { select: { id: true, name: true } },
   items: { orderBy: { id: "asc" } },
   payment: { include: { confirmedBy: { select: { name: true } } } },
 } satisfies Prisma.OrderInclude;
@@ -121,6 +124,8 @@ export function toOrderDTO(
     deliveryAddress: o.deliveryAddress,
     deliveryLat: o.deliveryLat,
     deliveryLng: o.deliveryLng,
+    deliveryPartner: o.deliveryPartner,
+    deliveredAt: iso(o.deliveredAt),
     scheduledDeleteAt: iso(o.scheduledDeleteAt),
     createdAt: o.createdAt.toISOString(),
     total: o.payment

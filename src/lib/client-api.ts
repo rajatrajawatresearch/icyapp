@@ -26,7 +26,9 @@ export async function api<T = unknown>(
   const data = await res.json().catch(() => ({}));
   if (
     res.status === 401 &&
-    (url.startsWith("/api/admin") || url.startsWith("/api/superadmin"))
+    (url.startsWith("/api/admin") ||
+      url.startsWith("/api/superadmin") ||
+      url.startsWith("/api/delivery"))
   ) {
     // Hard navigation on purpose: session expired, drop all client state.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination

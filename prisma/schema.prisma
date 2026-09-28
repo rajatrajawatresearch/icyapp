@@ -10,6 +10,8 @@ datasource db {
 enum Role {
   ADMIN
   SUPER_ADMIN
+  /// Delivery partner: sees only orders assigned to them (/delivery).
+  DELIVERY
 }
 
 enum OrderStatus {
@@ -51,17 +53,18 @@ model Customer {
 }
 
 model Admin {
-  id                String    @id @default(cuid())
+  id                String     @id @default(cuid())
   name              String
-  email             String    @unique
+  email             String     @unique
   passwordHash      String
-  role              Role      @default(ADMIN)
+  role              Role       @default(ADMIN)
   /// Deactivated admins cannot sign in; rows are kept for audit history.
-  isActive          Boolean   @default(true)
-  createdAt         DateTime  @default(now())
+  isActive          Boolean    @default(true)
+  createdAt         DateTime   @default(now())
   products          Product[]
   confirmedPayments Payment[]
   auditLogs         AuditLog[]
+  deliveries        Order[]    @relation("DeliveryAssignments")
 }
 
 model Product {
@@ -97,12 +100,17 @@ model Order {
   /// Pin dropped by the customer (current location / map search), for Google Maps directions.
   deliveryLat       Float?
   deliveryLng       Float?
+  /// Delivery partner (an Admin with role DELIVERY) assigned by the store.
+  deliveryPartnerId String?
+  deliveryPartner   Admin?         @relation("DeliveryAssignments", fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
+  deliveredAt       DateTime?
   scheduledDeleteAt DateTime?
   createdAt         DateTime       @default(now())
   items             OrderItem[]
   payment           Payment?
 
   @@index([customerId, createdAt])
+  @@index([deliveryPartnerId, status])
   @@index([createdAt])
   @@index([scheduledDeleteAt])
 }
