@@ -49,6 +49,10 @@ export function LeafletMap({
       L.tileLayer(OSM_TILES, {
         maxZoom: 19,
         attribution: OSM_ATTRIBUTION,
+        // OSM blocks tile requests without a Referer, and customer pages set
+        // referrer "no-referrer" to protect the token in the URL. Send only
+        // the site origin (never the /u/<token> path) for tiles.
+        referrerPolicy: "origin",
       }).addTo(m);
       const icon = L.divIcon({
         className: "",
