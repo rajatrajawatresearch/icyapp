@@ -45,7 +45,9 @@ export function isPushServiceEndpoint(endpoint: string) {
       !url.password &&
       // web-push connects using Node's legacy url.parse, which cuts the host
       // at characters (";", "`", "{" …) the modern parser keeps. A plain
-      // hostname that both parsers agree on closes that gap.
+      // hostname that both parsers agree on closes that gap. (url.parse logs
+      // a one-time deprecation warning; it is called on purpose, to check
+      // with the very parser the library uses.)
       /^[a-z0-9.-]+$/.test(url.hostname) &&
       legacyParse(endpoint).hostname === url.hostname &&
       PUSH_SERVICE_HOSTS.some((re) => re.test(url.hostname))
