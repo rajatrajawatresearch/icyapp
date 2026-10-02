@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireAdminApi } from "@/lib/auth";
+import { requireAdminApi, setSessionCookie } from "@/lib/auth";
 import { jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
 
@@ -27,10 +27,20 @@ export async function POST(req: Request) {
   if (!(await bcrypt.compare(body.data.currentPassword, admin.passwordHash))) {
     return jsonError("Current password is wrong", 403);
   }
-  await prisma.admin.update({
-    where: { id: admin.id },
-    data: { passwordHash: await bcrypt.hash(body.data.newPassword, 10) },
-  });
+  // A new password signs out every other device (and their push
+  // notifications); this device gets a fresh session below.
+  const [updated] = await prisma.$transaction([
+    prisma.admin.update({
+      where: { id: admin.id },
+      data: {
+        passwordHash: await bcrypt.hash(body.data.newPassword, 10),
+        sessionVersion: { increment: 1 },
+      },
+    }),
+    prisma.pushSubscription.deleteMany({ where: { adminId: admin.id } }),
+  ]);
   await audit(admin.id, "changed_password", admin.id, admin.email);
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  await setSessionCookie(res, updated);
+  return res;
 }

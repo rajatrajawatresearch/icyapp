@@ -24,10 +24,23 @@ export async function PATCH(
   const existing = await prisma.admin.findUnique({ where: { id } });
   if (!existing) return jsonError("Admin not found", 404);
 
-  const admin = await prisma.admin.update({
-    where: { id },
-    data: { isActive: body.data.isActive },
-  });
+  // Deactivating cuts every way in for good: sessions end, the sign-in link is
+  // cleared and push stops. Reactivating later must not revive a leaked link
+  // or an old cookie — the person signs in again with their password.
+  const [admin] = body.data.isActive
+    ? [await prisma.admin.update({ where: { id }, data: { isActive: true } })]
+    : await prisma.$transaction([
+        prisma.admin.update({
+          where: { id },
+          data: {
+            isActive: false,
+            sessionVersion: { increment: 1 },
+            accessTokenHash: null,
+            accessTokenAt: null,
+          },
+        }),
+        prisma.pushSubscription.deleteMany({ where: { adminId: id } }),
+      ]);
   await audit(
     auth.admin.id,
     body.data.isActive ? "reactivated_admin" : "deactivated_admin",

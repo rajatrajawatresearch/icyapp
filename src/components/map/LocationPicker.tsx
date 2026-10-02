@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { LocateFixed } from "lucide-react";
 import { api, errorMessage } from "@/lib/client-api";
 import type { LatLng } from "@/lib/maps";
 import { input } from "@/components/ui";
@@ -9,7 +10,7 @@ const LeafletMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-56 w-full animate-pulse rounded-xl bg-gray-100" />
+      <div className="h-56 w-full animate-pulse rounded-xl bg-muted" />
     ),
   },
 );
@@ -117,14 +118,7 @@ export function LocationPicker({
         disabled={locating}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-50 py-3 text-sm font-semibold text-brand-700 active:opacity-70 disabled:opacity-60"
       >
-        <svg
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="currentColor"
-          aria-hidden
-        >
-          <path d="M21 3 3 10.5l7.5 3L13.5 21z" />
-        </svg>
+        <LocateFixed className="h-4 w-4" aria-hidden />
         {locating ? "Finding you…" : "Use my current location"}
       </button>
 
@@ -142,17 +136,17 @@ export function LocationPicker({
           }}
         />
         {searching && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-4">
             …
           </span>
         )}
         {results.length > 0 && (
-          <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-surface shadow-lg">
+          <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-xl border border-line bg-surface shadow-pop">
             {results.map((r, i) => (
               <li key={`${r.lat},${r.lng},${i}`}>
                 <button
                   type="button"
-                  className="w-full px-3 py-2.5 text-left text-sm text-gray-800 hover:bg-gray-50 active:bg-gray-100"
+                  className="w-full px-3 py-2.5 text-left text-sm text-ink hover:bg-subtle active:bg-muted"
                   onClick={() => {
                     setResults([]);
                     setQuery("");
@@ -167,10 +161,10 @@ export function LocationPicker({
         )}
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger-ink">{error}</p>}
 
       <LeafletMap point={value} onPick={(p) => pick(p)} />
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-ink-3">
         {value
           ? "Drag the pin or tap the map to fine-tune."
           : "Tap the map to drop a pin."}

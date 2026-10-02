@@ -1,22 +1,9 @@
-import crypto from "crypto";
 import { prisma } from "./db";
+import { randomToken } from "./token";
 
-const TOKEN_ALPHABET =
-  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-const TOKEN_LENGTH = 16;
-
-/** 16 chars from a 57-char alphabet ≈ 93 bits — unguessable bearer link. */
+/** 16 characters ≈ 93 bits — an unguessable bearer link. */
 export function generateCustomerToken() {
-  const bytes = crypto.randomBytes(TOKEN_LENGTH * 2);
-  let out = "";
-  for (const b of bytes) {
-    // Rejection sampling keeps the distribution uniform.
-    if (b >= Math.floor(256 / TOKEN_ALPHABET.length) * TOKEN_ALPHABET.length)
-      continue;
-    out += TOKEN_ALPHABET[b % TOKEN_ALPHABET.length];
-    if (out.length === TOKEN_LENGTH) return out;
-  }
-  return generateCustomerToken();
+  return randomToken(16);
 }
 
 /**

@@ -1,52 +1,50 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bike,
+  CircleCheck,
+  MapPin,
+  QrCode,
+  Store,
+  Truck,
+  Upload,
+} from "lucide-react";
 import type { OrderDTO } from "@/lib/dto";
+import { APP_NAME } from "@/lib/brand";
 import {
   ADMIN_SETTABLE_STATUSES,
   FINAL_STATUSES,
   ORDER_STATUS_LABEL,
   POLL_INTERVAL_MS,
 } from "@/lib/constants";
-import { api, errorMessage } from "@/lib/client-api";
+import { api, createPoller, errorMessage } from "@/lib/client-api";
 import { inr, timeAgo } from "@/lib/format";
+import { compressImage } from "@/lib/image";
 import { googleDirectionsUrl } from "@/lib/maps";
 import { DeleteButton } from "@/components/DeleteButton";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
+import { ListSkeleton } from "@/components/Skeleton";
 import { PaymentBadge, StatusBadge } from "@/components/StatusBadge";
 import { useNow } from "@/components/useNow";
 import {
   btnSecondary,
   btnSuccess,
   card,
-  input,
+  emptyState,
+  field,
   pageTitle,
+  pill,
 } from "@/components/ui";
 
 type Filter = "open" | "upi" | "all";
 type Partner = { id: string; name: string };
+type Orders = { items: OrderDTO[]; trash: OrderDTO[] };
 
-/** Short two-tone chime via WebAudio — no asset needed. */
-function chime() {
-  try {
-    const ctx = new AudioContext();
-    [880, 1320].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        ctx.currentTime + i * 0.15 + 0.3,
-      );
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(ctx.currentTime + i * 0.15);
-      osc.stop(ctx.currentTime + i * 0.15 + 0.3);
-    });
-  } catch {
-    // Autoplay policies may block audio until the user interacts — the visual badge still shows.
-  }
-}
+const isUpiPending = (o: OrderDTO) =>
+  o.payment?.method === "UPI" &&
+  o.payment.status === "PENDING" &&
+  o.status !== "CANCELLED";
 
 export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   const [items, setItems] = useState<OrderDTO[] | null>(null);
@@ -56,23 +54,24 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [lastSync, setLastSync] = useState<number | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
+  const poll = useMemo(() => createPoller<Orders>("/api/admin/orders"), []);
   const seenIds = useRef<Set<string> | null>(null);
   const now = useNow(5000);
 
   const load = useCallback(async () => {
     try {
-      const data = await api<{ items: OrderDTO[]; trash: OrderDTO[] }>(
-        "/api/admin/orders",
-      );
-      // First load establishes the baseline; later loads flag anything unseen as new.
+      const result = await poll();
+      setLastSync(Date.now());
+      setError(null);
+      if (!result.changed) return; // nothing new since the last poll
+      const data = result.data;
+      // The first load is the baseline; later loads flag anything unseen as new.
+      // (The bell plays the sound — it gets the same "new order" notification.)
       if (seenIds.current) {
         const arrived = data.items
           .filter((o) => !seenIds.current!.has(o.id))
           .map((o) => o.id);
-        if (arrived.length) {
-          setNewIds((prev) => new Set([...prev, ...arrived]));
-          chime();
-        }
+        if (arrived.length) setNewIds((prev) => new Set([...prev, ...arrived]));
       }
       seenIds.current = new Set([
         ...(seenIds.current ?? []),
@@ -80,14 +79,13 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
       ]);
       setItems(data.items);
       setTrash(data.trash);
-      setLastSync(Date.now());
-      setError(null);
     } catch (e) {
       setError(errorMessage(e));
     }
-  }, []);
+  }, [poll]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- first fetch, then polling
     load();
     api<{ items: Partner[] }>("/api/admin/delivery-partners")
       .then((d) => setPartners(d.items))
@@ -101,8 +99,8 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   const newCount = newIds.size;
   useEffect(() => {
     document.title = newCount
-      ? `(${newCount}) New orders · Mini Marketplace`
-      : "Orders · Mini Marketplace";
+      ? `(${newCount}) New orders | ${APP_NAME}`
+      : `Orders | ${APP_NAME}`;
   }, [newCount]);
 
   function acknowledge(id: string) {
@@ -123,60 +121,50 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
 
   const list = (items ?? []).filter((o) => {
     if (filter === "open") return !FINAL_STATUSES.includes(o.status);
-    if (filter === "upi")
-      return (
-        o.payment?.method === "UPI" &&
-        o.payment.status === "PENDING" &&
-        o.status !== "CANCELLED"
-      );
+    if (filter === "upi") return isUpiPending(o);
     return true;
   });
-  const pendingUpi = (items ?? []).filter(
-    (o) =>
-      o.payment?.method === "UPI" &&
-      o.payment.status === "PENDING" &&
-      o.status !== "CANCELLED",
-  ).length;
+  const pendingUpi = (items ?? []).filter(isUpiPending).length;
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className={pageTitle}>
-          Orders{" "}
+          Orders
           {newCount > 0 && (
-            <span className="ml-1 rounded-full bg-red-600 px-2 py-0.5 align-middle text-xs font-semibold text-white">
+            <span className={`${pill} ml-2 bg-danger align-middle text-on-solid`}>
               {newCount} new
             </span>
           )}
         </h1>
-        <p className="flex items-center gap-1.5 text-xs text-gray-500">
+        <p className="flex items-center gap-2 text-xs text-ink-3">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
           </span>
-          Live ·{" "}
           {lastSync
-            ? `updated ${timeAgo(new Date(lastSync).toISOString(), now)}`
-            : "connecting…"}
+            ? `Live, checked ${timeAgo(new Date(lastSync).toISOString(), now)}`
+            : "Connecting…"}
         </p>
       </div>
 
-      <div className="mt-3 flex gap-2 overflow-x-auto">
+      <div className="mt-4 inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-muted p-1">
         {(
           [
             ["open", "Open"],
-            ["upi", `UPI pending${pendingUpi ? ` (${pendingUpi})` : ""}`],
+            ["upi", `UPI to confirm${pendingUpi ? ` (${pendingUpi})` : ""}`],
             ["all", "All"],
           ] as const
         ).map(([key, text]) => (
           <button
             key={key}
             type="button"
+            aria-pressed={filter === key}
             onClick={() => setFilter(key)}
-            className={`shrink-0 rounded-full border px-3 py-1 text-sm ${
+            className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
               filter === key
-                ? "border-brand-600 bg-brand-600 text-white"
-                : "border-gray-300 bg-surface text-gray-700"
+                ? "bg-surface text-ink shadow-xs"
+                : "text-ink-3 hover:text-ink"
             }`}
           >
             {text}
@@ -184,14 +172,15 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
         ))}
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
       {items === null ? (
-        <p className="mt-6 text-sm text-gray-500">Loading…</p>
+        <ListSkeleton rows={3} className="h-44" />
       ) : list.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
-          {filter === "all" ? "No orders yet." : "Nothing here right now."} New
-          orders appear automatically.
+        <p className={`${emptyState} mt-5`}>
+          {filter === "all"
+            ? "No orders yet. When a customer orders, it appears here by itself."
+            : "Nothing waiting here right now. New orders appear by themselves."}
         </p>
       ) : (
         <ul className="mt-4 space-y-3">
@@ -216,7 +205,7 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
           entity="order"
           rows={trash.map((o) => ({
             id: o.id,
-            label: `#${o.number} · ${o.customer.name} · ${inr(o.total)}`,
+            label: `#${o.number}, ${o.customer.name}, ${inr(o.total)}`,
             scheduledDeleteAt: o.scheduledDeleteAt,
           }))}
           onChange={load}
@@ -250,8 +239,11 @@ function OrderCard({
   const fileRef = useRef<HTMLInputElement>(null);
   const pay = o.payment;
   const closed = o.status === "CANCELLED";
-  const upiPending =
-    pay?.method === "UPI" && pay.status === "PENDING" && !closed;
+  const upiPending = pay?.method === "UPI" && pay.status === "PENDING" && !closed;
+  const pin =
+    o.deliveryLat !== null && o.deliveryLng !== null
+      ? { lat: o.deliveryLat, lng: o.deliveryLng }
+      : null;
 
   async function run(key: string, fn: () => Promise<OrderDTO>) {
     setBusy(key);
@@ -289,22 +281,19 @@ function OrderCard({
   }
 
   function uploadQr(file: File) {
-    const fd = new FormData();
-    fd.set("file", file);
-    run("qr", () =>
-      api<OrderDTO>(`/api/admin/orders/${o.id}/qr`, {
+    run("qr", async () => {
+      const fd = new FormData();
+      // Screenshots are large; keep the QR sharp but small enough to upload fast.
+      fd.set("file", await compressImage(file, { maxSide: 1600, quality: 0.9 }));
+      return api<OrderDTO>(`/api/admin/orders/${o.id}/qr`, {
         method: "POST",
         body: fd,
-      }),
-    );
+      });
+    });
   }
 
   function markPaid() {
-    if (
-      !window.confirm(
-        `Confirm ${inr(o.total)} received for order #${o.number}?`,
-      )
-    )
+    if (!window.confirm(`Confirm ${inr(o.total)} received for order #${o.number}?`))
       return;
     run("paid", () =>
       api<OrderDTO>(`/api/admin/orders/${o.id}/mark-paid`, { method: "POST" }),
@@ -312,125 +301,133 @@ function OrderCard({
   }
 
   const highlight = isNew
-    ? "border-red-400 ring-2 ring-red-300 bg-red-50/40"
+    ? "border-brand-400 ring-2 ring-brand-200"
     : o.status === "PLACED"
-      ? "border-amber-300 bg-amber-50/50"
+      ? "border-warning-line"
       : "";
 
   return (
     <li
-      className={`${card} p-4 ${highlight}`}
+      className={`${card} p-4 sm:p-5 ${highlight}`}
       onClick={isNew ? onAcknowledge : undefined}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-gray-900">
+          <p className="text-xl leading-tight font-extrabold tracking-tight text-ink">
             #{o.number}
             {isNew && (
-              <span className="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+              <span className={`${pill} ml-2 bg-brand-600 align-middle text-on-solid`}>
                 New
               </span>
             )}
           </p>
-          <p className="text-sm text-gray-700">
-            {o.customer.name} ·{" "}
+          <p className="mt-0.5 text-sm text-ink-2">
+            {o.customer.name},{" "}
             <a
-              href={`tel:${o.customer.phone}`}
-              className="text-brand-700 underline"
+              href={`tel:${o.customer.phone.replace(/\s/g, "")}`}
+              className="font-semibold text-brand-700"
             >
               {o.customer.phone}
             </a>
           </p>
-          <p className="text-xs text-gray-500">{timeAgo(o.createdAt, now)}</p>
+          <p className="text-xs text-ink-3">{timeAgo(o.createdAt, now)}</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1.5">
           <StatusBadge status={o.status} />
           {pay && <PaymentBadge method={pay.method} status={pay.status} />}
         </div>
       </div>
 
-      <ul className="mt-3 space-y-0.5 text-sm text-gray-800">
+      <ul className="mt-4 space-y-1 text-sm text-ink">
         {o.items.map((i) => (
           <li key={i.id} className="flex justify-between gap-2">
             <span>
               {i.qty} × {i.productName}
             </span>
-            <span className="tabular-nums text-gray-600">
+            <span className="text-ink-2 tabular-nums">
               {inr(i.qty * i.priceAtOrder)}
             </span>
           </li>
         ))}
-        <li className="flex justify-between border-t border-gray-100 pt-1 font-semibold">
+        <li className="flex justify-between border-t border-line pt-2 text-base font-extrabold">
           <span>Total</span>
           <span className="tabular-nums">{inr(o.total)}</span>
         </li>
       </ul>
 
-      <p className="mt-2 text-sm text-gray-700">
+      <div className="mt-3 space-y-1.5 text-sm text-ink-2">
         {o.fulfilmentType === "PICKUP" ? (
-          <span className="font-medium">🏬 Pickup</span>
+          <p className="flex items-center gap-2">
+            <Store className="h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+            <span className="font-semibold text-ink">Pickup at the store</span>
+          </p>
         ) : (
-          <>
-            <span className="font-medium">🚚 Delivery:</span>{" "}
-            {o.deliveryAddress}{" "}
-            <a
-              href={googleDirectionsUrl(
-                o.deliveryLat !== null && o.deliveryLng !== null ? { lat: o.deliveryLat, lng: o.deliveryLng } : null,
-                o.deliveryAddress,
-              )}
-              target="_blank"
-              rel="noreferrer"
-              className="whitespace-nowrap font-medium text-brand-700 underline"
-            >
-              📍 Open in Maps{o.deliveryLat !== null ? "" : " (address)"}
-            </a>
-          </>
+          <p className="flex items-start gap-2">
+            <Truck className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+            <span>
+              <span className="font-semibold text-ink">Deliver to</span>{" "}
+              {o.deliveryAddress}{" "}
+              <a
+                href={googleDirectionsUrl(pin, o.deliveryAddress)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-semibold whitespace-nowrap text-brand-700"
+              >
+                <MapPin className="h-3.5 w-3.5" aria-hidden />
+                {pin ? "Open in Maps" : "Find in Maps"}
+              </a>
+            </span>
+          </p>
         )}
-      </p>
-      {o.deliveryPartner && (
-        <p className="mt-1 text-sm text-gray-700">
-          🛵 Delivery partner: <span className="font-medium">{o.deliveryPartner.name}</span>
-          {o.deliveredAt && " · delivered"}
-        </p>
-      )}
+        {o.deliveryPartner && (
+          <p className="flex items-center gap-2">
+            <Bike className="h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+            <span>
+              <span className="font-semibold text-ink">{o.deliveryPartner.name}</span>{" "}
+              {o.deliveredAt ? "delivered it" : "is delivering"}
+            </span>
+          </p>
+        )}
+        {o.receivedAt && (
+          <p className="flex items-center gap-2 font-semibold text-success-ink">
+            <CircleCheck className="h-4 w-4 shrink-0" aria-hidden />
+            Customer confirmed they received it
+          </p>
+        )}
+      </div>
 
       {pay?.method === "UPI" && (
-        <div className="mt-3 flex items-center gap-3 rounded-lg bg-gray-50 p-2">
+        <div className="mt-3 flex items-center gap-3 rounded-xl bg-subtle p-2.5">
           {pay.qrImageUrl ? (
-            <a
-              href={pay.qrImageUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="shrink-0"
-            >
+            <a href={pay.qrImageUrl} target="_blank" rel="noreferrer" className="shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={pay.qrImageUrl}
                 alt="UPI QR"
-                className="h-16 w-16 rounded border border-gray-200 object-contain"
+                className="h-16 w-16 rounded-lg border border-line bg-on-solid object-contain"
               />
             </a>
           ) : (
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded border border-dashed border-gray-300 text-[10px] text-gray-400">
-              No QR
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-dashed border-line-strong text-ink-4">
+              <QrCode className="h-6 w-6" aria-hidden />
             </div>
           )}
-          <p className="text-xs text-gray-600">
+          <p className="text-sm text-ink-2">
             {pay.status === "PAID"
-              ? `Paid · confirmed by ${pay.confirmedByName ?? "admin"}`
+              ? `Paid, confirmed by ${pay.confirmedByName ?? "the store"}.`
               : pay.qrImageUrl
-                ? "QR sent — waiting for customer to pay"
-                : "Customer is waiting for a QR"}
+                ? "QR sent. Waiting for the customer to pay."
+                : "The customer is waiting for a QR."}
           </p>
         </div>
       )}
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <select
           aria-label="Order status"
-          className={`${input} w-auto py-1.5`}
+          className={`${field} max-w-full`}
           value=""
           disabled={closed || busy !== null}
           onChange={(e) => e.target.value && changeStatus(e.target.value)}
@@ -446,19 +443,22 @@ function OrderCard({
         {o.fulfilmentType === "DELIVERY" && !closed && o.status !== "COMPLETED" && (
           <select
             aria-label="Delivery partner"
-            className={`${input} w-auto py-1.5`}
+            className={`${field} max-w-full`}
             value={o.deliveryPartner?.id ?? ""}
             disabled={busy !== null}
             onChange={(e) => assign(e.target.value)}
           >
-            <option value="">{partners.length ? "🛵 Assign delivery…" : "🛵 No delivery partners yet"}</option>
+            <option value="">
+              {partners.length ? "Assign delivery…" : "No delivery partners yet"}
+            </option>
             {/* Keep a deactivated-but-assigned partner visible so the select shows the truth. */}
-            {o.deliveryPartner && !partners.some((p) => p.id === o.deliveryPartner!.id) && (
-              <option value={o.deliveryPartner.id}>{o.deliveryPartner.name}</option>
-            )}
+            {o.deliveryPartner &&
+              !partners.some((p) => p.id === o.deliveryPartner!.id) && (
+                <option value={o.deliveryPartner.id}>{o.deliveryPartner.name}</option>
+              )}
             {partners.map((p) => (
               <option key={p.id} value={p.id}>
-                🛵 {p.name}
+                {p.name}
               </option>
             ))}
           </select>
@@ -483,11 +483,8 @@ function OrderCard({
               disabled={busy !== null}
               onClick={() => fileRef.current?.click()}
             >
-              {busy === "qr"
-                ? "Uploading…"
-                : pay?.qrImageUrl
-                  ? "Replace QR"
-                  : "Upload QR"}
+              <Upload className="h-4 w-4" aria-hidden />
+              {busy === "qr" ? "Uploading…" : pay?.qrImageUrl ? "Replace QR" : "Upload QR"}
             </button>
           </>
         )}
@@ -499,6 +496,7 @@ function OrderCard({
             disabled={busy !== null}
             onClick={markPaid}
           >
+            <CircleCheck className="h-4 w-4" aria-hidden />
             {busy === "paid" ? "Saving…" : "Mark paid"}
           </button>
         )}

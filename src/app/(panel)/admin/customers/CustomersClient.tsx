@@ -154,11 +154,11 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
           {busy ? "Adding…" : "Add & get link"}
         </button>
       </form>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
       {fresh && (
-        <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-4">
-          <p className="text-sm font-medium text-emerald-900">
+        <div className="mt-4 rounded-xl border border-success-line bg-success-soft p-4">
+          <p className="text-sm font-medium text-success-ink">
             Private link for {fresh.name} — share it on WhatsApp
           </p>
           <div className="mt-2 flex gap-2">
@@ -178,7 +178,7 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
           </div>
           <button
             type="button"
-            className="mt-2 text-xs text-emerald-800 underline"
+            className="mt-2 text-xs text-success-ink underline"
             onClick={() => setFresh(null)}
           >
             Dismiss
@@ -187,8 +187,8 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
       )}
 
       <div className="mt-6 flex items-center justify-between gap-3">
-        <p className="text-sm text-gray-600">
-          {items ? `${items.length} customers` : "Loading…"}
+        <p className="text-sm text-ink-2">
+          {items ? `${items.length} customer${items.length === 1 ? "" : "s"}` : ""}
         </p>
         <input
           className={`${input} max-w-[14rem]`}
@@ -203,19 +203,19 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
           <li key={c.id} className={`${card} p-3`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-ink">
                   {c.name}{" "}
                   {!c.isActive && (
-                    <span className="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                    <span className="ml-1 rounded-full bg-danger-soft px-2 py-0.5 text-xs font-medium text-danger-ink">
                       Link revoked
                     </span>
                   )}
                 </p>
-                <p className="text-sm text-gray-600">
-                  {c.phone} · {c.orderCount} order
+                <p className="text-sm text-ink-2">
+                  {c.phone}, {c.orderCount} order
                   {c.orderCount === 1 ? "" : "s"}
                 </p>
-                <p className="mt-1 truncate font-mono text-xs text-gray-400">
+                <p className="mt-1 truncate font-mono text-xs text-ink-4">
                   /u/{c.token}
                 </p>
               </div>
@@ -257,7 +257,7 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
         ))}
       </ul>
       {items && items.length === 0 && (
-        <p className="mt-3 rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+        <p className="mt-3 rounded-xl border border-dashed border-line-strong p-8 text-center text-sm text-ink-3">
           No customers yet. Add one above to generate their private link.
         </p>
       )}
@@ -267,7 +267,7 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
           entity="customer"
           rows={trash.map((c) => ({
             id: c.id,
-            label: `${c.name} · ${c.phone}`,
+            label: `${c.name}, ${c.phone}`,
             scheduledDeleteAt: c.scheduledDeleteAt,
           }))}
           onChange={load}

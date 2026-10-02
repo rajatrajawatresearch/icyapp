@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Navigation } from "lucide-react";
 import { googleDirectionsUrl } from "@/lib/maps";
 
 const LeafletMap = dynamic(
@@ -8,7 +9,7 @@ const LeafletMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-36 w-full animate-pulse rounded-xl bg-gray-100" />
+      <div className="h-36 w-full animate-pulse rounded-xl bg-muted" />
     ),
   },
 );
@@ -29,7 +30,7 @@ export function PickupCard({
 }) {
   if (!pickup.address) {
     return (
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-ink-2">
         The store will share pickup details after confirming your order.
       </p>
     );
@@ -40,7 +41,7 @@ export function PickupCard({
       : null;
   return (
     <div className="space-y-2">
-      <p className="text-sm text-gray-800">
+      <p className="text-sm text-ink">
         <span className="font-semibold">Pickup from:</span> {pickup.address}
       </p>
       {showMap && point && <LeafletMap point={point} className="h-36" />}
@@ -48,16 +49,9 @@ export function PickupCard({
         href={googleDirectionsUrl(point, pickup.address)}
         target="_blank"
         rel="noreferrer"
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white active:opacity-80"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-on-solid shadow-brand transition active:scale-[0.98]"
       >
-        <svg
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="currentColor"
-          aria-hidden
-        >
-          <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
-        </svg>
+        <Navigation className="h-4 w-4" aria-hidden />
         Directions in Google Maps
       </a>
     </div>

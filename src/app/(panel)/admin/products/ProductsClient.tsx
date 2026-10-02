@@ -1,15 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Package } from "lucide-react";
 import type { ProductDTO } from "@/lib/dto";
 import { api, errorMessage } from "@/lib/client-api";
 import { inr } from "@/lib/format";
+import { compressImage } from "@/lib/image";
 import { DeleteButton } from "@/components/DeleteButton";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
+import { ListSkeleton } from "@/components/Skeleton";
 import {
   btnPrimary,
   btnSecondary,
   card,
+  emptyState,
   input,
   label,
   pageTitle,
@@ -99,8 +103,9 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
     fd.set("category", form.category);
     fd.set("isActive", String(form.isActive));
     const file = fileRef.current?.files?.[0];
-    if (file) fd.set("image", file);
     try {
+      // Phone photos are several MB: shrink before upload (faster, and lighter for customers).
+      if (file) fd.set("image", await compressImage(file));
       await api(
         editingId ? `/api/admin/products/${editingId}` : "/api/admin/products",
         {
@@ -148,7 +153,7 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
       </div>
 
       {error && !showForm && (
-        <p className="mt-3 text-sm text-red-600">{error}</p>
+        <p className="mt-3 text-sm text-danger-ink">{error}</p>
       )}
 
       {showForm && (
@@ -157,7 +162,7 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
           onSubmit={save}
           className={`${card} mt-4 space-y-3 p-4`}
         >
-          <h2 className="font-medium text-gray-900">
+          <h2 className="font-medium text-ink">
             {editingId ? "Edit product" : "New product"}
           </h2>
           <div>
@@ -233,10 +238,10 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
               ref={fileRef}
               type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
-              className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-medium"
+              className="block w-full text-sm text-ink-2 file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-800">
+          <label className="flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"
               className="h-4 w-4 accent-brand-600"
@@ -245,7 +250,7 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
             />
             Active (visible to customers)
           </label>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger-ink">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
             <button
               type="button"
@@ -263,10 +268,11 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
       )}
 
       {items === null ? (
-        <p className="mt-6 text-sm text-gray-500">Loading…</p>
+        <ListSkeleton rows={3} className="h-28" />
       ) : items.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
-          No products yet. Add your first product.
+        <p className={`${emptyState} mt-5`}>
+          No products yet. Add your first one and it shows up in every
+          customer&apos;s shop.
         </p>
       ) : (
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -275,7 +281,7 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
               key={p.id}
               className={`${card} flex gap-3 p-3 ${p.isActive ? "" : "opacity-60"}`}
             >
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                 {p.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -284,28 +290,28 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="grid h-full place-items-center text-2xl text-gray-300">
-                    📦
+                  <div className="grid h-full place-items-center">
+                    <Package className="h-7 w-7 text-ink-4" aria-hidden />
                   </div>
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-gray-900">
+                    <p className="truncate font-medium text-ink">
                       {p.name}
                     </p>
-                    <p className="text-xs text-gray-500">{p.category}</p>
+                    <p className="text-xs text-ink-3">{p.category}</p>
                   </div>
-                  <p className="shrink-0 font-semibold text-gray-900">
+                  <p className="shrink-0 font-semibold text-ink">
                     {inr(p.price)}
                   </p>
                 </div>
                 <p
-                  className={`mt-1 text-xs ${p.stockQty === 0 ? "text-red-600" : "text-gray-600"}`}
+                  className={`mt-1 text-xs ${p.stockQty === 0 ? "text-danger-ink" : "text-ink-2"}`}
                 >
                   {p.stockQty === 0 ? "Out of stock" : `${p.stockQty} in stock`}
-                  {!p.isActive && " · Inactive"}
+                  {!p.isActive && ", hidden from customers"}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
@@ -342,7 +348,7 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
           entity="product"
           rows={trash.map((p) => ({
             id: p.id,
-            label: `${p.name} · ${inr(p.price)}`,
+            label: `${p.name}, ${inr(p.price)}`,
             scheduledDeleteAt: p.scheduledDeleteAt,
           }))}
           onChange={load}

@@ -1,16 +1,31 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChangePasswordForm } from "@/components/ChangePasswordForm";
+import { ChevronLeft } from "lucide-react";
+import { requireAdminPage } from "@/lib/auth";
+import { AccountPanel } from "@/components/AccountPanel";
+import { InstallButton } from "@/components/InstallButton";
+import { LogoutButton } from "@/components/LogoutButton";
+import { pageTitle } from "@/components/ui";
 
 export const metadata: Metadata = { title: "My account" };
 
-export default function DeliveryAccountPage() {
+export default async function DeliveryAccountPage() {
+  const me = await requireAdminPage({ deliveryOnly: true });
   return (
     <div>
-      <Link href="/delivery" className="text-sm font-medium text-brand-700">
-        ← My deliveries
+      <Link
+        href="/delivery"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        My deliveries
       </Link>
-      <ChangePasswordForm />
+      <h1 className={`${pageTitle} mt-3`}>My account</h1>
+      <AccountPanel me={me} />
+      <div className="mt-4 space-y-3">
+        <InstallButton className="w-full justify-center" />
+        <LogoutButton className="w-full py-3" />
+      </div>
     </div>
   );
 }

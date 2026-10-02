@@ -5,6 +5,8 @@ import { requireAdminApi } from "@/lib/auth";
 import { UserError, jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { inr } from "@/lib/format";
+import { notifyCustomer, notifyStore } from "@/lib/notify";
 
 const ActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("start") }),
@@ -90,6 +92,41 @@ export async function POST(
           ? `order #${result.order.number} · cash collected${amount}`
           : `order #${result.order.number}`;
       await audit(me.id, result.action, id, details);
+
+      const { order } = result;
+      if (result.action === "delivery_started") {
+        await notifyCustomer(order.customerId, {
+          type: "delivery_started",
+          orderId: id,
+          title: `${me.name} is on the way`,
+          body: `Order #${order.number} is out for delivery.`,
+        });
+        await notifyStore({
+          type: "delivery_started",
+          orderId: id,
+          title: `Order #${order.number} is out for delivery`,
+          body: `${me.name} picked it up.`,
+        });
+      } else {
+        const cash =
+          result.cashCollected && order.payment
+            ? ` and collected ${inr(Number(order.payment.amount))} in cash`
+            : "";
+        await notifyCustomer(order.customerId, {
+          type: "delivered",
+          orderId: id,
+          title: `Order #${order.number} delivered`,
+          body: order.receivedAt
+            ? "Thank you for ordering."
+            : "Open your orders and confirm you received it.",
+        });
+        await notifyStore({
+          type: "delivered",
+          orderId: id,
+          title: `Order #${order.number} delivered`,
+          body: `${me.name} delivered it${cash}.`,
+        });
+      }
     }
     const fresh = await prisma.order.findUniqueOrThrow({
       where: { id },

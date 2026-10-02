@@ -1,29 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Check, Moon, Palette, Sun, SunMoon } from "lucide-react";
 import {
   ACCENTS,
   ACCENT_STORAGE_KEY,
-  SURFACE_COLOR,
+  DEFAULT_ACCENT,
   THEME_STORAGE_KEY,
   type AccentId,
   type ThemeMode,
 } from "@/lib/theme";
-
-function systemPrefersDark() {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
+import { iconBtn } from "./ui";
 
 function applyTheme(mode: ThemeMode, accent: AccentId) {
   const root = document.documentElement;
-  const dark = mode === "dark" || (mode === "system" && systemPrefersDark());
+  const dark =
+    mode === "dark" ||
+    (mode === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
   root.dataset.theme = dark ? "dark" : "light";
   root.dataset.accent = accent;
-  // Keep the mobile browser/installed-app status bar in sync with the header.
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-    m.setAttribute("content", dark ? SURFACE_COLOR.dark : SURFACE_COLOR.light);
-    m.removeAttribute("media");
-  });
 }
 
 function read<T extends string>(key: string, fallback: T): T {
@@ -40,23 +36,23 @@ function write(key: string, value: string) {
   } catch {}
 }
 
-const MODES: { id: ThemeMode; label: string }[] = [
-  { id: "light", label: "Light" },
-  { id: "dark", label: "Dark" },
-  { id: "system", label: "Auto" },
-];
+const MODES = [
+  { id: "light", label: "Light", Icon: Sun },
+  { id: "dark", label: "Dark", Icon: Moon },
+  { id: "system", label: "Auto", Icon: SunMoon },
+] as const;
 
-/** Compact button + popover for light/dark/auto and the accent colour. Per device. */
-export function ThemePicker() {
+/** Button + popover for light/dark/auto and the accent flavour. Remembered per device. */
+export function ThemePicker({ align = "right" }: { align?: "left" | "right" }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ThemeMode>("system");
-  const [accent, setAccent] = useState<AccentId>("blue");
+  const [accent, setAccent] = useState<AccentId>(DEFAULT_ACCENT);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync from storage after mount
     setMode(read<ThemeMode>(THEME_STORAGE_KEY, "system"));
-    setAccent(read<AccentId>(ACCENT_STORAGE_KEY, "blue"));
+    setAccent(read<AccentId>(ACCENT_STORAGE_KEY, DEFAULT_ACCENT));
   }, []);
 
   // Follow OS changes while in Auto.
@@ -73,8 +69,13 @@ export function ThemePicker() {
     const close = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   function chooseMode(next: ThemeMode) {
@@ -93,68 +94,61 @@ export function ThemePicker() {
     <div ref={ref} className="relative">
       <button
         type="button"
-        aria-label="Theme and colour"
+        aria-label="Appearance"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="grid h-9 w-9 place-items-center rounded-full border border-gray-300 bg-surface text-gray-700 hover:bg-gray-50"
+        className={iconBtn}
       >
-        <svg
-          viewBox="0 0 24 24"
-          className="h-4.5 w-4.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" />
-        </svg>
+        <Palette className="h-[18px] w-[18px]" aria-hidden />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-gray-200 bg-surface p-3 shadow-lg">
-          <p className="mb-2 text-xs font-medium text-gray-500">Appearance</p>
-          <div className="grid grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1">
-            {MODES.map((m) => (
+        <div
+          className={`absolute top-full z-50 mt-2 w-64 animate-pop rounded-2xl border border-line bg-raised p-3 shadow-pop ${
+            align === "right" ? "right-0" : "left-0"
+          }`}
+        >
+          <p className="mb-2 text-xs font-semibold text-ink-3">Appearance</p>
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+            {MODES.map(({ id, label, Icon }) => (
               <button
-                key={m.id}
+                key={id}
                 type="button"
-                onClick={() => chooseMode(m.id)}
-                className={`rounded-md py-1.5 text-sm font-medium ${
-                  mode === m.id
-                    ? "bg-surface text-gray-900 shadow-sm"
-                    : "text-gray-600"
+                aria-pressed={mode === id}
+                onClick={() => chooseMode(id)}
+                className={`flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-semibold transition ${
+                  mode === id
+                    ? "bg-surface text-ink shadow-xs"
+                    : "text-ink-3 hover:text-ink"
                 }`}
               >
-                {m.label}
+                <Icon className="h-4 w-4" aria-hidden />
+                {label}
               </button>
             ))}
           </div>
-          <p className="mb-2 mt-3 text-xs font-medium text-gray-500">Colour</p>
-          <div className="flex justify-between">
+
+          <p className="mt-4 mb-2 text-xs font-semibold text-ink-3">Flavour</p>
+          <div className="grid grid-cols-4 gap-1">
             {ACCENTS.map((a) => (
               <button
                 key={a.id}
                 type="button"
-                aria-label={a.label}
                 aria-pressed={accent === a.id}
                 onClick={() => chooseAccent(a.id)}
-                className={`grid h-10 w-10 place-items-center rounded-full ring-offset-2 ring-offset-[var(--surface)] ${
-                  accent === a.id ? "ring-2 ring-gray-900" : ""
-                }`}
-                style={{ backgroundColor: a.color }}
+                className="flex flex-col items-center gap-1.5 rounded-lg py-1.5 text-[11px] font-medium text-ink-2 hover:bg-subtle"
               >
-                {accent === a.id && (
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    aria-hidden
-                  >
-                    <path d="M5 12l5 5L20 7" />
-                  </svg>
-                )}
+                {/* data-accent scopes --brand to this swatch (see globals.css). */}
+                <span
+                  data-accent={a.id}
+                  className={`grid h-9 w-9 place-items-center rounded-full bg-(--brand) text-on-solid ring-offset-2 ring-offset-raised ${
+                    accent === a.id ? "ring-2 ring-(--brand)" : ""
+                  }`}
+                >
+                  {accent === a.id && (
+                    <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
+                  )}
+                </span>
+                <span className="leading-tight">{a.label}</span>
               </button>
             ))}
           </div>

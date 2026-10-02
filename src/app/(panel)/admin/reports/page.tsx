@@ -2,16 +2,11 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { isSuperAdmin, requireAdminPage } from "@/lib/auth";
 import { purgeExpired } from "@/lib/purge";
-import { formatDateTime, inr } from "@/lib/format";
+import { formatDate, formatDateTime, inr } from "@/lib/format";
+import { startOfStoreDay } from "@/lib/time";
 import { card, pageTitle } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Reports" };
-
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 const liveOrder = { scheduledDeleteAt: null };
 
@@ -32,7 +27,7 @@ async function paidTotal(method: "CASH" | "UPI", since?: Date) {
 export default async function ReportsPage() {
   const admin = await requireAdminPage();
   await purgeExpired();
-  const today = startOfToday();
+  const today = startOfStoreDay();
   const superView = isSuperAdmin(admin);
 
   const [
@@ -102,28 +97,28 @@ export default async function ReportsPage() {
   return (
     <div>
       <h1 className={pageTitle}>Reports</h1>
-      <p className="text-sm text-gray-500">
-        Today · {today.toLocaleDateString("en-IN", { dateStyle: "medium" })}
+      <p className="text-sm text-ink-3">
+        Today, {formatDate(today)}
       </p>
 
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
           <div
             key={s.label}
-            className={`${card} p-4 ${s.alert ? "border-orange-300 bg-orange-50" : ""}`}
+            className={`${card} p-4 ${s.alert ? "border-warning-line bg-warning-soft" : ""}`}
           >
-            <p className="text-xs font-medium text-gray-500">{s.label}</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+            <p className="text-xs font-medium text-ink-3">{s.label}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">
               {s.value}
             </p>
-            {s.hint && <p className="text-xs text-gray-500">{s.hint}</p>}
+            {s.hint && <p className="text-xs text-ink-3">{s.hint}</p>}
           </div>
         ))}
       </div>
 
       {platform && (
         <>
-          <h2 className="mt-8 text-base font-semibold text-gray-900">
+          <h2 className="mt-8 text-base font-semibold text-ink">
             Platform totals (all time)
           </h2>
           <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -145,29 +140,29 @@ export default async function ReportsPage() {
               },
             ].map((s) => (
               <div key={s.label} className={`${card} p-4`}>
-                <p className="text-xs font-medium text-gray-500">{s.label}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+                <p className="text-xs font-medium text-ink-3">{s.label}</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">
                   {s.value}
                 </p>
-                {s.hint && <p className="text-xs text-gray-500">{s.hint}</p>}
+                {s.hint && <p className="text-xs text-ink-3">{s.hint}</p>}
               </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-ink-3">
             {platform[3]} active customers
           </p>
         </>
       )}
 
-      <h2 className="mt-8 text-base font-semibold text-gray-900">
+      <h2 className="mt-8 text-base font-semibold text-ink">
         Recent payments
       </h2>
       {recentPayments.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-500">No confirmed payments yet.</p>
+        <p className="mt-2 text-sm text-ink-3">No confirmed payments yet.</p>
       ) : (
         <div className={`${card} mt-3 overflow-x-auto`}>
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs text-gray-500">
+            <thead className="bg-subtle text-xs text-ink-3">
               <tr>
                 <th className="px-3 py-2 font-medium">Order</th>
                 <th className="px-3 py-2 font-medium">Customer</th>
@@ -176,7 +171,7 @@ export default async function ReportsPage() {
                 <th className="px-3 py-2 font-medium">Confirmed</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-line">
               {recentPayments.map((p) => (
                 <tr key={p.id}>
                   <td className="px-3 py-2 font-medium">#{p.order.number}</td>
@@ -185,9 +180,9 @@ export default async function ReportsPage() {
                   <td className="px-3 py-2 text-right tabular-nums">
                     {inr(Number(p.amount))}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-gray-600">
+                  <td className="whitespace-nowrap px-3 py-2 text-ink-2">
                     {p.confirmedAt ? formatDateTime(p.confirmedAt) : "—"}
-                    {p.confirmedBy && ` · ${p.confirmedBy.name}`}
+                    {p.confirmedBy && `, ${p.confirmedBy.name}`}
                   </td>
                 </tr>
               ))}

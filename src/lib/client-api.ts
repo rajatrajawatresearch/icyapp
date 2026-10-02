@@ -1,4 +1,4 @@
-// Browser-side fetch wrapper: JSON in/out, throws ApiError with the server's message.
+// Browser-side fetch helpers: JSON in/out, errors carry the server's message.
 
 export class ApiError extends Error {
   constructor(
@@ -7,6 +7,28 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+const STAFF_API = [
+  "/api/admin",
+  "/api/superadmin",
+  "/api/delivery",
+  "/api/notifications",
+];
+
+async function readJson<T>(url: string, res: Response): Promise<T> {
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && STAFF_API.some((p) => url.startsWith(p))) {
+    // Hard navigation on purpose: the session ended, drop all client state.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/admin/login";
+  }
+  if (!res.ok)
+    throw new ApiError(
+      data?.error ?? `Request failed (${res.status})`,
+      res.status,
+    );
+  return data as T;
 }
 
 export async function api<T = unknown>(
@@ -23,23 +45,28 @@ export async function api<T = unknown>(
         : rest.headers,
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   });
-  const data = await res.json().catch(() => ({}));
-  if (
-    res.status === 401 &&
-    (url.startsWith("/api/admin") ||
-      url.startsWith("/api/superadmin") ||
-      url.startsWith("/api/delivery"))
-  ) {
-    // Hard navigation on purpose: session expired, drop all client state.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/admin/login";
-  }
-  if (!res.ok)
-    throw new ApiError(
-      data?.error ?? `Request failed (${res.status})`,
-      res.status,
-    );
-  return data as T;
+  return readJson<T>(url, res);
+}
+
+export type Polled<T> = { changed: true; data: T } | { changed: false };
+
+/**
+ * A fetcher for lists that are polled every few seconds. It remembers the
+ * ETag of the last answer, so when nothing changed the server replies with an
+ * empty 304 — no download, no JSON parse, no re-render.
+ */
+export function createPoller<T>(url: string) {
+  let etag: string | null = null;
+  return async function poll(): Promise<Polled<T>> {
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: etag ? { "If-None-Match": etag } : undefined,
+    });
+    if (res.status === 304) return { changed: false };
+    const data = await readJson<T>(url, res);
+    etag = res.headers.get("ETag");
+    return { changed: true, data };
+  };
 }
 
 export function errorMessage(e: unknown) {

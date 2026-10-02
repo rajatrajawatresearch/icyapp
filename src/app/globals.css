@@ -3,15 +3,41 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /*
- * Theming: components use normal Tailwind names (gray-*, red-*, brand-*,
- * bg-surface). Light/dark and the accent colour only swap CSS variables on
- * <html data-theme data-accent>, set before paint by the script in layout.tsx.
+ * Design tokens. This file is the only place a colour is written down.
+ * Components use the names below (bg-surface, text-ink-2, bg-brand-600,
+ * text-danger-ink …); Tailwind's built-in palette and shadows are switched
+ * off, so a raw `red-500` or `#hex` in a component produces no CSS at all.
+ *
+ * Light / dark and the accent only swap the variables on
+ * <html data-theme data-accent>, set before first paint (lib/theme.ts).
  */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-*: initial;
+  --shadow-*: initial;
+
+  --font-sans:
+    var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Surfaces, from the canvas up. */
   --color-page: var(--page);
   --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-subtle: var(--subtle);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-scrim: var(--scrim);
+
+  /* Text, strongest to faintest. */
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-on-solid: var(--on-solid);
+
+  /* Accent, derived from one colour (the chosen flavour). */
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);
   --color-brand-200: var(--brand-200);
@@ -22,28 +48,147 @@
   --color-brand-700: var(--brand-700);
   --color-brand-800: var(--brand-800);
   --color-brand-900: var(--brand-900);
+  --color-hero-1: var(--hero-1);
+  --color-hero-2: var(--hero-2);
+  --color-hero-3: var(--hero-3);
+
+  /* Meaning: each has a solid, a soft fill, a border and a text shade. */
+  --color-success: var(--success);
+  --color-success-strong: var(--success-strong);
+  --color-success-soft: var(--success-soft);
+  --color-success-line: var(--success-line);
+  --color-success-ink: var(--success-ink);
+  --color-warning: var(--warning);
+  --color-warning-strong: var(--warning-strong);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-line: var(--warning-line);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-danger-ink: var(--danger-ink);
+  --color-info: var(--info);
+  --color-info-strong: var(--info-strong);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+  --color-info-ink: var(--info-ink);
+
+  /* Elevation: controls sit flat, cards lift a little, sheets float. */
+  --shadow-xs: var(--elev-xs);
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
+  --shadow-brand: var(--elev-brand);
+
+  --animate-sheet: sheet-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-pop: pop-in 150ms ease-out;
+  --animate-fade: fade-in 180ms ease-out;
+  --animate-float: float 7s ease-in-out infinite;
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(28px);
+      opacity: 0;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      transform: translateY(-6px) scale(0.97);
+      opacity: 0;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-3deg);
+    }
+    50% {
+      transform: translateY(-12px) rotate(2deg);
+    }
+  }
 }
 
+/* ── Frost (light): cool whites with a deep-water ink, never neutral grey ── */
 :root {
   color-scheme: light;
-  --page: #f5f7fb;
+  --page: #edf2f8;
   --surface: #ffffff;
-  /* Brand shades are derived from one accent colour. --tone is what the
-     darker "text" shades mix toward: black in light mode, white in dark. */
-  --tone: #000000;
-  --brand: #2563eb;
+  --raised: #ffffff;
+  --subtle: #f3f6fa;
+  --muted: #e4eaf2;
+  --line: #dfe6ef;
+  --line-strong: #c5d0de;
+  --scrim: rgb(5 15 30 / 0.5);
+
+  --ink: #0a1b33;
+  --ink-2: #3a4a61;
+  --ink-3: #617186;
+  --ink-4: #95a2b4;
+  --on-solid: #ffffff;
+  /* What tinted text mixes toward: deep navy on light, white on dark. */
+  --tone: #061226;
+
+  --brand: #1273ea; /* Ice */
+  --success: #0f9f6e; /* pista */
+  --warning: #d98a00; /* mango */
+  --danger: #e0464c;
+  --info: #6a5ae0;
+
+  --shadow-rgb: 10 27 51;
+  --elev-xs: 0 1px 2px rgb(var(--shadow-rgb) / 0.07);
+  --elev-card:
+    0 1px 2px rgb(var(--shadow-rgb) / 0.04),
+    0 10px 28px -14px rgb(var(--shadow-rgb) / 0.14);
+  --elev-pop:
+    0 2px 6px rgb(var(--shadow-rgb) / 0.06),
+    0 28px 56px -18px rgb(var(--shadow-rgb) / 0.3);
 }
 
-:root[data-accent="green"] {
-  --brand: #059669;
+/* The four accents are ice-candy flavours. Usable on <html> (the whole app)
+   or on any element (the swatches in the theme picker). */
+[data-accent="green"] {
+  --brand: #0b966a; /* Pista */
 }
-:root[data-accent="purple"] {
-  --brand: #7c3aed;
+[data-accent="purple"] {
+  --brand: #6a4be8; /* Kala khatta */
 }
-:root[data-accent="pink"] {
-  --brand: #db2777;
+[data-accent="pink"] {
+  --brand: #dd3f7d; /* Rose */
 }
 
+/* ── Glacier night (dark): navy all the way down, lit from above ── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #050c17;
+  --surface: #0b1626;
+  --raised: #101f35;
+  --subtle: #0f1c30;
+  --muted: #182a43;
+  --line: #15263c;
+  --line-strong: #263b58;
+  --scrim: rgb(1 5 12 / 0.72);
+
+  --ink: #e8f0fb;
+  --ink-2: #a9bbd1;
+  --ink-3: #7a8ea8;
+  --ink-4: #52667f;
+  --tone: #ffffff;
+
+  --shadow-rgb: 0 0 0;
+  --elev-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --elev-card:
+    inset 0 1px 0 rgb(255 255 255 / 0.04), 0 14px 34px -18px rgb(0 0 0 / 0.75);
+  --elev-pop:
+    inset 0 1px 0 rgb(255 255 255 / 0.07), 0 30px 64px -20px rgb(0 0 0 / 0.9);
+}
+
+/* Derived shades. Declared on :root so they follow whichever --brand,
+   --surface and --tone are in force. */
 :root {
   --brand-50: color-mix(in oklab, var(--brand) 8%, var(--surface));
   --brand-100: color-mix(in oklab, var(--brand) 15%, var(--surface));
@@ -52,122 +197,32 @@
   --brand-400: color-mix(in oklab, var(--brand) 72%, var(--surface));
   --brand-500: color-mix(in oklab, var(--brand) 88%, var(--surface));
   --brand-600: var(--brand);
-  --brand-700: color-mix(in oklab, var(--brand) 80%, var(--tone));
-  --brand-800: color-mix(in oklab, var(--brand) 62%, var(--tone));
-  --brand-900: color-mix(in oklab, var(--brand) 48%, var(--tone));
-}
+  --brand-700: color-mix(in oklab, var(--brand) 78%, var(--tone));
+  --brand-800: color-mix(in oklab, var(--brand) 60%, var(--tone));
+  --brand-900: color-mix(in oklab, var(--brand) 45%, var(--tone));
+  /* The glacier gradient (login, splash): always deep, in both modes. */
+  --hero-1: color-mix(in oklab, var(--brand) 62%, #ffffff);
+  --hero-2: var(--brand);
+  --hero-3: color-mix(in oklab, var(--brand) 42%, #020b24);
+  --elev-brand: 0 10px 22px -10px
+    color-mix(in oklab, var(--brand) 75%, transparent);
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --page: #0a0f1a;
-  --surface: #131b2b;
-  --tone: #ffffff;
-
-  /* Inverted neutral scale: "gray-900" text becomes near-white, etc. */
-  --color-gray-50: #172031;
-  --color-gray-100: #1d2739;
-  --color-gray-200: #283349;
-  --color-gray-300: #36435c;
-  --color-gray-400: #5d6b84;
-  --color-gray-500: #8795ac;
-  --color-gray-600: #a8b3c6;
-  --color-gray-700: #c3ccda;
-  --color-gray-800: #dce2ec;
-  --color-gray-900: #f1f4f9;
-
-  /* Status tints: dark backgrounds, light text. 500/600 stay as-is for solid buttons. */
-  --color-red-50: color-mix(in oklab, var(--color-red-500) 12%, var(--surface));
-  --color-red-100: color-mix(
-    in oklab,
-    var(--color-red-500) 22%,
-    var(--surface)
-  );
-  --color-red-200: color-mix(
-    in oklab,
-    var(--color-red-500) 35%,
-    var(--surface)
-  );
-  --color-red-300: color-mix(
-    in oklab,
-    var(--color-red-500) 50%,
-    var(--surface)
-  );
-  --color-red-700: color-mix(in oklab, var(--color-red-500) 45%, white);
-  --color-red-800: color-mix(in oklab, var(--color-red-500) 35%, white);
-  --color-red-900: color-mix(in oklab, var(--color-red-500) 25%, white);
-
-  --color-emerald-50: color-mix(
-    in oklab,
-    var(--color-emerald-500) 12%,
-    var(--surface)
-  );
-  --color-emerald-100: color-mix(
-    in oklab,
-    var(--color-emerald-500) 22%,
-    var(--surface)
-  );
-  --color-emerald-200: color-mix(
-    in oklab,
-    var(--color-emerald-500) 35%,
-    var(--surface)
-  );
-  --color-emerald-300: color-mix(
-    in oklab,
-    var(--color-emerald-500) 50%,
-    var(--surface)
-  );
-  --color-emerald-700: color-mix(in oklab, var(--color-emerald-500) 45%, white);
-  --color-emerald-800: color-mix(in oklab, var(--color-emerald-500) 35%, white);
-  --color-emerald-900: color-mix(in oklab, var(--color-emerald-500) 25%, white);
-
-  --color-amber-50: color-mix(
-    in oklab,
-    var(--color-amber-500) 12%,
-    var(--surface)
-  );
-  --color-amber-100: color-mix(
-    in oklab,
-    var(--color-amber-500) 22%,
-    var(--surface)
-  );
-  --color-amber-200: color-mix(
-    in oklab,
-    var(--color-amber-500) 35%,
-    var(--surface)
-  );
-  --color-amber-300: color-mix(
-    in oklab,
-    var(--color-amber-500) 50%,
-    var(--surface)
-  );
-  --color-amber-700: color-mix(in oklab, var(--color-amber-500) 45%, white);
-  --color-amber-800: color-mix(in oklab, var(--color-amber-500) 35%, white);
-  --color-amber-900: color-mix(in oklab, var(--color-amber-500) 25%, white);
-
-  --color-orange-50: color-mix(
-    in oklab,
-    var(--color-orange-500) 12%,
-    var(--surface)
-  );
-  --color-orange-100: color-mix(
-    in oklab,
-    var(--color-orange-500) 22%,
-    var(--surface)
-  );
-  --color-orange-300: color-mix(
-    in oklab,
-    var(--color-orange-500) 50%,
-    var(--surface)
-  );
-  --color-orange-600: color-mix(in oklab, var(--color-orange-500) 70%, white);
-  --color-orange-800: color-mix(in oklab, var(--color-orange-500) 35%, white);
-
-  --color-indigo-100: color-mix(
-    in oklab,
-    var(--color-indigo-500) 22%,
-    var(--surface)
-  );
-  --color-indigo-800: color-mix(in oklab, var(--color-indigo-500) 35%, white);
+  --success-strong: color-mix(in oklab, var(--success) 84%, #000000);
+  --success-soft: color-mix(in oklab, var(--success) 11%, var(--surface));
+  --success-line: color-mix(in oklab, var(--success) 34%, var(--surface));
+  --success-ink: color-mix(in oklab, var(--success) 66%, var(--tone));
+  --warning-strong: color-mix(in oklab, var(--warning) 84%, #000000);
+  --warning-soft: color-mix(in oklab, var(--warning) 13%, var(--surface));
+  --warning-line: color-mix(in oklab, var(--warning) 40%, var(--surface));
+  --warning-ink: color-mix(in oklab, var(--warning) 62%, var(--tone));
+  --danger-strong: color-mix(in oklab, var(--danger) 84%, #000000);
+  --danger-soft: color-mix(in oklab, var(--danger) 10%, var(--surface));
+  --danger-line: color-mix(in oklab, var(--danger) 34%, var(--surface));
+  --danger-ink: color-mix(in oklab, var(--danger) 70%, var(--tone));
+  --info-strong: color-mix(in oklab, var(--info) 84%, #000000);
+  --info-soft: color-mix(in oklab, var(--info) 11%, var(--surface));
+  --info-line: color-mix(in oklab, var(--info) 34%, var(--surface));
+  --info-ink: color-mix(in oklab, var(--info) 70%, var(--tone));
 }
 
 html {
@@ -176,8 +231,25 @@ html {
 
 body {
   background: var(--page);
-  color: var(--color-gray-900);
+  color: var(--ink);
   -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+/* Keyboard focus is always visible; fields that draw their own ring opt out. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Installed-app feel: no pull-to-refresh bounce fighting the sticky headers. */

@@ -7,13 +7,6 @@ import { jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { toAdminDTO } from "@/lib/dto";
 
-export async function GET() {
-  const auth = await requireAdminApi({ superOnly: true });
-  if (!auth.ok) return auth.res;
-  const admins = await prisma.admin.findMany({ orderBy: { createdAt: "asc" } });
-  return NextResponse.json({ items: admins.map(toAdminDTO) });
-}
-
 const CreateAdminSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
   email: z.string().trim().toLowerCase().email("Enter a valid email"),
@@ -24,7 +17,7 @@ const CreateAdminSchema = z.object({
   role: z.enum(["ADMIN", "SUPER_ADMIN", "DELIVERY"]).default("ADMIN"),
 });
 
-/** POST /api/superadmin/admins — create an admin account. */
+/** POST /api/superadmin/admins — create a staff account (the list is GET /api/admin/team). */
 export async function POST(req: Request) {
   const auth = await requireAdminApi({ superOnly: true });
   if (!auth.ok) return auth.res;

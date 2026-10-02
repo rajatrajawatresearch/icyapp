@@ -5,6 +5,7 @@ import { requireAdminApi } from "@/lib/auth";
 import { jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { notifyStaff } from "@/lib/notify";
 
 const AssignSchema = z.object({
   deliveryPartnerId: z.string().min(1).nullable(),
@@ -41,6 +42,15 @@ export async function POST(
     partnerName = partner.name;
   }
 
+  if (deliveryPartnerId === order.deliveryPartnerId) {
+    // Nothing changed — don't write an audit row or ping the rider again.
+    const same = await prisma.order.findUniqueOrThrow({
+      where: { id },
+      include: orderInclude,
+    });
+    return NextResponse.json(toOrderDTO(same));
+  }
+
   await prisma.order.update({ where: { id }, data: { deliveryPartnerId } });
   await audit(
     auth.admin.id,
@@ -48,6 +58,18 @@ export async function POST(
     id,
     `order #${order.number} → ${partnerName}`,
   );
+  await notifyStaff(deliveryPartnerId, {
+    type: "delivery_assigned",
+    orderId: id,
+    title: `New delivery: order #${order.number}`,
+    body: `${order.customerName}, ${order.deliveryAddress ?? "address in the order"}`,
+  });
+  await notifyStaff(order.deliveryPartnerId, {
+    type: "delivery_unassigned",
+    orderId: id,
+    title: `Order #${order.number} is no longer yours`,
+    body: "The store took this delivery off your list.",
+  });
   const fresh = await prisma.order.findUniqueOrThrow({
     where: { id },
     include: orderInclude,

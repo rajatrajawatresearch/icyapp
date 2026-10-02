@@ -1,15 +1,26 @@
 // Client-safe formatting helpers.
 
+import { STORE_TIME_ZONE } from "./time";
+
 export function inr(amount: number | string) {
   return `₹${Number(amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 }
 
+/** Always store time — server-rendered pages would otherwise print UTC. */
 export function formatDateTime(iso: string | Date) {
   return new Date(iso).toLocaleString("en-IN", {
+    timeZone: STORE_TIME_ZONE,
     day: "numeric",
     month: "short",
     hour: "numeric",
     minute: "2-digit",
+  });
+}
+
+export function formatDate(iso: string | Date) {
+  return new Date(iso).toLocaleDateString("en-IN", {
+    timeZone: STORE_TIME_ZONE,
+    dateStyle: "medium",
   });
 }
 

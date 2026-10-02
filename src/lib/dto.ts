@@ -44,6 +44,8 @@ export type OrderDTO = {
   deliveryLng: number | null;
   deliveryPartner: { id: string; name: string } | null;
   deliveredAt: string | null;
+  /** When the customer confirmed they received the order. */
+  receivedAt: string | null;
   scheduledDeleteAt: string | null;
   createdAt: string;
   total: number;
@@ -65,6 +67,8 @@ export type AdminDTO = {
   role: "ADMIN" | "SUPER_ADMIN" | "DELIVERY";
   isActive: boolean;
   createdAt: string;
+  /** When their private sign-in link was last issued (null = no link). The link itself is never sent. */
+  accessLinkAt: string | null;
 };
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -126,6 +130,7 @@ export function toOrderDTO(
     deliveryLng: o.deliveryLng,
     deliveryPartner: o.deliveryPartner,
     deliveredAt: iso(o.deliveredAt),
+    receivedAt: iso(o.receivedAt),
     scheduledDeleteAt: iso(o.scheduledDeleteAt),
     createdAt: o.createdAt.toISOString(),
     total: o.payment
@@ -154,5 +159,6 @@ export function toAdminDTO(a: Prisma.AdminGetPayload<object>): AdminDTO {
     role: a.role,
     isActive: a.isActive,
     createdAt: a.createdAt.toISOString(),
+    accessLinkAt: a.accessTokenHash ? iso(a.accessTokenAt) : null,
   };
 }

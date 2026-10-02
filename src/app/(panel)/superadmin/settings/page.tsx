@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   return (
     <div className="max-w-xl">
       <h1 className={pageTitle}>Store settings</h1>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-ink-3">
         Customers who choose Pickup see this address with Google Maps
         directions.
       </p>

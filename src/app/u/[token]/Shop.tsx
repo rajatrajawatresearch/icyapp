@@ -1,17 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  Banknote,
+  Minus,
+  Package,
+  Plus,
+  QrCode,
+  ShoppingBag,
+  Store,
+  Truck,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import type { ProductDTO } from "@/lib/dto";
 import { api, errorMessage } from "@/lib/client-api";
 import { inr } from "@/lib/format";
-import { btnPrimary, input, label } from "@/components/ui";
+import type { LatLng } from "@/lib/maps";
 import { InstallButton } from "@/components/InstallButton";
-import { ThemePicker } from "@/components/ThemePicker";
 import { LocationPicker } from "@/components/map/LocationPicker";
 import { PickupCard, type Pickup } from "@/components/map/PickupCard";
-import type { LatLng } from "@/lib/maps";
+import { btnPrimary, input, label, scrim, sheet } from "@/components/ui";
+import { CustomerHeader, CustomerTabs } from "./CustomerChrome";
 
 type Cart = Record<string, number>; // productId -> qty
 
@@ -96,6 +107,7 @@ export function Shop({
     .filter((l) => l.product);
   const itemCount = lines.reduce((s, l) => s + l.qty, 0);
   const total = lines.reduce((s, l) => s + l.qty * l.product.price, 0);
+  const needsAddress = fulfilment === "DELIVERY" && address.trim().length < 5;
 
   async function placeOrder() {
     setBusy(true);
@@ -127,37 +139,25 @@ export function Shop({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl flex-1 pb-28">
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-surface/95 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-gray-500">Welcome back</p>
-            <p className="truncate font-semibold text-gray-900">
-              {customerName}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <ThemePicker />
-            <Link
-              href={`/u/${token}/orders`}
-              className="inline-flex h-9 items-center rounded-full border border-gray-300 bg-surface px-3 text-sm font-medium text-gray-800"
-            >
-              My orders
-            </Link>
-          </div>
-        </div>
+    <div className="mx-auto w-full max-w-2xl flex-1 pb-40">
+      <CustomerHeader
+        token={token}
+        title={`Hi ${customerName.split(" ")[0]}`}
+        subtitle="What would you like today?"
+      >
         <InstallButton className="mt-3 w-full justify-center" />
         {categories.length > 1 && (
-          <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
+          <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
             {[null, ...categories].map((c) => (
               <button
                 key={c ?? "all"}
                 type="button"
+                aria-pressed={category === c}
                 onClick={() => setCategory(c)}
-                className={`shrink-0 rounded-full px-3 py-1 text-sm ${
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
                   category === c
-                    ? "bg-brand-600 text-white"
-                    : "bg-gray-100 text-gray-700"
+                    ? "bg-ink text-surface"
+                    : "bg-muted text-ink-2 hover:text-ink"
                 }`}
               >
                 {c ?? "All"}
@@ -165,12 +165,16 @@ export function Shop({
             ))}
           </div>
         )}
-      </header>
+      </CustomerHeader>
 
       {products.length === 0 ? (
-        <p className="px-4 py-16 text-center text-sm text-gray-500">
-          No products available right now. Please check back soon.
-        </p>
+        <div className="px-6 py-20 text-center">
+          <Package className="mx-auto h-10 w-10 text-ink-4" aria-hidden />
+          <p className="mt-3 font-semibold text-ink">Nothing on the shelf yet</p>
+          <p className="mt-1 text-sm text-ink-3">
+            The store hasn&apos;t added products. Check back soon.
+          </p>
+        </div>
       ) : (
         <ul className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
           {visible.map((p) => {
@@ -179,48 +183,51 @@ export function Shop({
             return (
               <li
                 key={p.id}
-                className={`flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface ${soldOut ? "opacity-60" : ""}`}
+                className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card"
               >
-                <div className="aspect-square bg-gray-100">
+                <div className="relative aspect-square bg-muted">
                   {p.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={p.imageUrl}
                       alt={p.name}
-                      className="h-full w-full object-cover"
                       loading="lazy"
+                      decoding="async"
+                      className={`h-full w-full object-cover ${soldOut ? "opacity-50 grayscale" : ""}`}
                     />
                   ) : (
-                    <div className="grid h-full place-items-center text-4xl text-gray-300">
-                      📦
+                    <div className="grid h-full place-items-center">
+                      <Package className="h-10 w-10 text-ink-4" aria-hidden />
                     </div>
                   )}
+                  {soldOut && (
+                    <span className="absolute top-2 left-2 rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-danger-ink shadow-xs">
+                      Sold out
+                    </span>
+                  )}
+                  {!soldOut && p.stockQty <= 5 && (
+                    <span className="absolute top-2 left-2 rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-warning-ink shadow-xs">
+                      Only {p.stockQty} left
+                    </span>
+                  )}
                 </div>
-                <div className="flex flex-1 flex-col p-2.5">
-                  <p className="line-clamp-2 text-sm font-medium leading-snug text-gray-900">
+                <div className="flex flex-1 flex-col p-3">
+                  <p className="line-clamp-2 text-[15px] leading-snug font-semibold text-ink">
                     {p.name}
                   </p>
-                  <p className="mt-0.5 text-sm font-semibold text-gray-900">
+                  <p className="mt-1 text-lg leading-none font-extrabold tracking-tight text-ink tabular-nums">
                     {inr(p.price)}
                   </p>
-                  <p
-                    className={`text-xs ${soldOut ? "text-red-600" : p.stockQty <= 5 ? "text-orange-600" : "text-gray-500"}`}
-                  >
-                    {soldOut
-                      ? "Out of stock"
-                      : p.stockQty <= 5
-                        ? `Only ${p.stockQty} left`
-                        : `${p.stockQty} in stock`}
-                  </p>
-                  <div className="mt-auto pt-2">
+                  <div className="mt-auto pt-3">
                     {qty === 0 ? (
                       <button
                         type="button"
                         disabled={soldOut}
                         onClick={() => setQty(p.id, 1)}
-                        className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white disabled:bg-gray-300"
+                        className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-brand-50 text-sm font-bold text-brand-700 transition hover:bg-brand-100 active:scale-[0.97] disabled:bg-muted disabled:text-ink-4"
                       >
-                        {soldOut ? "Sold out" : "Add"}
+                        <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden />
+                        Add
                       </button>
                     ) : (
                       <Stepper
@@ -238,60 +245,72 @@ export function Shop({
       )}
 
       {itemCount > 0 && !checkoutOpen && (
-        <div className="fixed inset-x-0 bottom-0 z-40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-[calc(3.6rem+env(safe-area-inset-bottom))] z-40 px-3 pb-2">
           <button
             type="button"
             onClick={() => {
               setError(null);
               setCheckoutOpen(true);
             }}
-            className="mx-auto flex w-full max-w-2xl items-center justify-between rounded-2xl bg-brand-600 px-5 py-4 text-white shadow-lg"
+            className="mx-auto flex w-full max-w-2xl animate-sheet items-center justify-between rounded-2xl bg-brand-600 py-3.5 pr-5 pl-4 text-on-solid shadow-brand transition active:scale-[0.98]"
           >
-            <span className="text-sm font-medium">
-              {itemCount} item{itemCount === 1 ? "" : "s"} · {inr(total)}
+            <span className="flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-on-solid/20">
+                <ShoppingBag className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="text-left">
+                <span className="block text-xs text-on-solid/80">
+                  {itemCount} item{itemCount === 1 ? "" : "s"}
+                </span>
+                <span className="block text-base leading-tight font-extrabold tabular-nums">
+                  {inr(total)}
+                </span>
+              </span>
             </span>
-            <span className="font-semibold">Checkout →</span>
+            <span className="text-base font-bold">Checkout</span>
           </button>
         </div>
       )}
 
       {checkoutOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
-          onClick={() => !busy && setCheckoutOpen(false)}
-        >
+        <div className={scrim} onClick={() => !busy && setCheckoutOpen(false)}>
           <div
             role="dialog"
             aria-modal="true"
-            className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-2xl"
+            aria-label="Your order"
+            className={`${sheet} max-h-[94dvh] overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Your order
-              </h2>
-              <button
-                type="button"
-                className="text-sm text-gray-500"
-                onClick={() => setCheckoutOpen(false)}
-                disabled={busy}
-              >
-                Close
-              </button>
+            <div className="sticky top-0 z-10 -mx-5 bg-raised px-5 pt-3 pb-3">
+              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line-strong sm:hidden" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-extrabold tracking-tight text-ink">
+                  Your order
+                </h2>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-muted text-ink-2"
+                  onClick={() => setCheckoutOpen(false)}
+                  disabled={busy}
+                >
+                  <X className="h-5 w-5" aria-hidden />
+                </button>
+              </div>
             </div>
 
-            <ul className="mt-3 divide-y divide-gray-100">
+            <ul className="divide-y divide-line">
               {lines.map(({ product: p, qty }) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between gap-3 py-2"
+                  className="flex items-center justify-between gap-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-gray-900">
+                    <p className="truncate text-sm font-semibold text-ink">
                       {p.name}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {inr(p.price)} × {qty} = {inr(p.price * qty)}
+                    <p className="text-xs text-ink-3 tabular-nums">
+                      {inr(p.price)} each, {inr(p.price * qty)} total
                     </p>
                   </div>
                   <div className="w-28 shrink-0">
@@ -305,23 +324,27 @@ export function Shop({
               ))}
             </ul>
             {lines.length === 0 && (
-              <p className="py-4 text-center text-sm text-gray-500">
-                Your cart is empty.
+              <p className="py-4 text-center text-sm text-ink-3">
+                Your cart is empty. Close this and add something first.
               </p>
             )}
 
-            <fieldset className="mt-4">
+            <fieldset className="mt-5">
               <legend className={label}>How do you want it?</legend>
               <div className="grid grid-cols-2 gap-2">
                 <Choice
                   checked={fulfilment === "DELIVERY"}
                   onClick={() => setFulfilment("DELIVERY")}
-                  title="🚚 Delivery"
+                  Icon={Truck}
+                  title="Delivery"
+                  sub="To your door"
                 />
                 <Choice
                   checked={fulfilment === "PICKUP"}
                   onClick={() => setFulfilment("PICKUP")}
-                  title="🏬 Pickup"
+                  Icon={Store}
+                  title="Pickup"
+                  sub="Collect at the store"
                 />
               </div>
             </fieldset>
@@ -336,66 +359,73 @@ export function Shop({
                   value={pin}
                   onChange={setPin}
                   onAddress={(a) => setAddress((cur) => (cur.trim() ? cur : a))}
-                  near={pickup.lat !== null && pickup.lng !== null ? { lat: pickup.lat, lng: pickup.lng } : null}
+                  near={
+                    pickup.lat !== null && pickup.lng !== null
+                      ? { lat: pickup.lat, lng: pickup.lng }
+                      : null
+                  }
                 />
-                <label className={label} htmlFor="address">
-                  Delivery address
-                </label>
-                <textarea
-                  id="address"
-                  rows={3}
-                  className={input}
-                  placeholder="Flat / house no, building, street, landmark"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
+                <div>
+                  <label className={label} htmlFor="address">
+                    Delivery address
+                  </label>
+                  <textarea
+                    id="address"
+                    rows={3}
+                    className={input}
+                    placeholder="Flat / house no, building, street, landmark"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
               </div>
             )}
 
-            <fieldset className="mt-4">
-              <legend className={label}>Payment</legend>
+            <fieldset className="mt-5">
+              <legend className={label}>How will you pay?</legend>
               <div className="grid grid-cols-2 gap-2">
                 <Choice
                   checked={payment === "CASH"}
                   onClick={() => setPayment("CASH")}
-                  title="💵 Cash"
-                  sub="Pay on delivery/pickup"
+                  Icon={Banknote}
+                  title="Cash"
+                  sub={fulfilment === "PICKUP" ? "Pay at pickup" : "Pay at the door"}
                 />
                 <Choice
                   checked={payment === "UPI"}
                   onClick={() => setPayment("UPI")}
-                  title="📱 UPI"
-                  sub="Store sends a QR"
+                  Icon={QrCode}
+                  title="UPI"
+                  sub="The store sends a QR"
                 />
               </div>
             </fieldset>
 
             {error && (
-              <p className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-700">
+              <p role="alert" className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger-ink">
                 {error}
               </p>
             )}
 
             <button
               type="button"
-              className={`${btnPrimary} mt-5 w-full py-3.5 text-base`}
+              className={`${btnPrimary} mt-5 w-full justify-between px-5 py-4 text-base`}
               onClick={placeOrder}
-              disabled={
-                busy ||
-                lines.length === 0 ||
-                (fulfilment === "DELIVERY" && address.trim().length < 5)
-              }
+              disabled={busy || lines.length === 0 || needsAddress}
             >
-              {busy ? "Placing order…" : `Place order · ${inr(total)}`}
+              <span>{busy ? "Placing order…" : "Place order"}</span>
+              <span className="font-extrabold tabular-nums">{inr(total)}</span>
             </button>
-            {fulfilment === "DELIVERY" && address.trim().length < 5 && (
-              <p className="mt-2 text-center text-xs text-gray-500">
-                Enter your delivery address to continue
+            {needsAddress && (
+              <p className="mt-2 text-center text-xs text-ink-3">
+                Enter your delivery address to place the order.
               </p>
             )}
           </div>
         </div>
       )}
+
+      <CustomerTabs token={token} />
     </div>
   );
 }
@@ -410,24 +440,24 @@ function Stepper({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-brand-600 text-brand-700">
+    <div className="flex h-10 items-center justify-between rounded-xl bg-brand-600 text-on-solid">
       <button
         type="button"
-        aria-label="Decrease"
-        className="px-3 py-1.5 text-lg leading-none"
+        aria-label="One less"
+        className="grid h-10 w-10 place-items-center rounded-xl active:bg-brand-700"
         onClick={() => onChange(qty - 1)}
       >
-        −
+        <Minus className="h-4 w-4" strokeWidth={2.6} aria-hidden />
       </button>
-      <span className="text-sm font-semibold tabular-nums">{qty}</span>
+      <span className="text-sm font-extrabold tabular-nums">{qty}</span>
       <button
         type="button"
-        aria-label="Increase"
-        className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
+        aria-label="One more"
+        className="grid h-10 w-10 place-items-center rounded-xl active:bg-brand-700 disabled:opacity-40"
         disabled={qty >= max}
         onClick={() => onChange(qty + 1)}
       >
-        +
+        <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden />
       </button>
     </div>
   );
@@ -436,13 +466,15 @@ function Stepper({
 function Choice({
   checked,
   onClick,
+  Icon,
   title,
   sub,
 }: {
   checked: boolean;
   onClick: () => void;
+  Icon: LucideIcon;
   title: string;
-  sub?: string;
+  sub: string;
 }) {
   return (
     <button
@@ -450,10 +482,20 @@ function Choice({
       role="radio"
       aria-checked={checked}
       onClick={onClick}
-      className={`rounded-xl border p-3 text-left ${checked ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600" : "border-gray-300 bg-surface"}`}
+      className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition ${
+        checked
+          ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+          : "border-line-strong bg-surface hover:bg-subtle"
+      }`}
     >
-      <span className="block text-sm font-medium text-gray-900">{title}</span>
-      {sub && <span className="block text-xs text-gray-500">{sub}</span>}
+      <Icon
+        className={`mt-0.5 h-5 w-5 shrink-0 ${checked ? "text-brand-700" : "text-ink-3"}`}
+        aria-hidden
+      />
+      <span>
+        <span className="block text-sm font-bold text-ink">{title}</span>
+        <span className="block text-xs text-ink-3">{sub}</span>
+      </span>
     </button>
   );
 }

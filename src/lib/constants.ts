@@ -35,16 +35,19 @@ export const ORDER_STATUS_LABEL: Record<OrderStatusValue, string> = {
   PLACED: "Placed",
   CONFIRMED: "Confirmed",
   PAID: "Paid",
-  OUT_FOR_DELIVERY: "Out for delivery / ready",
+  OUT_FOR_DELIVERY: "On the way / ready",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
 };
 
 export const ORDER_STATUS_STYLE: Record<OrderStatusValue, string> = {
-  PLACED: "bg-amber-100 text-amber-800",
+  PLACED: "bg-warning-soft text-warning-ink",
   CONFIRMED: "bg-brand-100 text-brand-800",
-  PAID: "bg-emerald-100 text-emerald-800",
-  OUT_FOR_DELIVERY: "bg-indigo-100 text-indigo-800",
-  COMPLETED: "bg-gray-200 text-gray-700",
-  CANCELLED: "bg-red-100 text-red-700",
+  PAID: "bg-success-soft text-success-ink",
+  OUT_FOR_DELIVERY: "bg-info-soft text-info-ink",
+  COMPLETED: "bg-muted text-ink-2",
+  CANCELLED: "bg-danger-soft text-danger-ink",
 };
+
+/** How often open screens re-check their notifications. */
+export const NOTIFICATION_POLL_MS = 12_000;

@@ -29,7 +29,7 @@ export function ChangePasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirm("");
-      setMessage({ ok: true, text: "Password changed" });
+      setMessage({ ok: true, text: "Password changed. Your other devices were signed out." });
     } catch (err) {
       setMessage({ ok: false, text: errorMessage(err) });
     } finally {
@@ -39,7 +39,7 @@ export function ChangePasswordForm() {
 
   return (
     <form onSubmit={submit} className={`${card} mt-4 space-y-3 p-4`}>
-      <h2 className="font-medium text-gray-900">Change password</h2>
+      <h2 className="font-bold text-ink">Change password</h2>
       <div>
         <label className={label} htmlFor="cur-pass">
           Current password
@@ -56,7 +56,7 @@ export function ChangePasswordForm() {
       </div>
       <div>
         <label className={label} htmlFor="new-pass">
-          New password (min 8)
+          New password (8 or more characters)
         </label>
         <input
           id="new-pass"
@@ -86,7 +86,7 @@ export function ChangePasswordForm() {
       </div>
       {message && (
         <p
-          className={`text-sm ${message.ok ? "text-emerald-700" : "text-red-600"}`}
+          className={`text-sm ${message.ok ? "text-success-ink" : "text-danger-ink"}`}
         >
           {message.text}
         </p>

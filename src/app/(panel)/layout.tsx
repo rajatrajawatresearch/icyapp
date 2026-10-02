@@ -11,7 +11,7 @@ export default async function PanelLayout({
   return (
     <div className="flex min-h-full flex-1 flex-col md:pl-64">
       <AdminNav name={admin.name} isSuper={isSuperAdmin(admin)} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 sm:px-8 md:py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 sm:px-8 md:py-9">
         {children}
       </main>
     </div>

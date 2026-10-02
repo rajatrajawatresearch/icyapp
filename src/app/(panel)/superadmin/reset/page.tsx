@@ -10,7 +10,7 @@ export default async function ResetPage() {
   return (
     <div className="max-w-xl">
       <h1 className={pageTitle}>Data reset</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-ink-3">
         Clear test or wrong data created in a time window. Admin accounts,
         settings and the audit log are never touched.
       </p>

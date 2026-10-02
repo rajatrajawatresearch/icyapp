@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 import {
   DEFAULT_DELETE_DELAY,
   DELETE_DELAY_MINUTES,
@@ -9,7 +10,7 @@ import {
 import { api, errorMessage } from "@/lib/client-api";
 import { countdown } from "@/lib/format";
 import { useNow } from "@/components/useNow";
-import { btnSecondary, card, input, label } from "@/components/ui";
+import { btnSecondary, card, field, input, label } from "@/components/ui";
 
 type Unit = "minutes" | "hours" | "days";
 type Range = { amount: number; unit: Unit } | null;
@@ -122,19 +123,19 @@ export function ResetClient() {
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-sm font-medium transition ${
       active
-        ? "border-brand-600 bg-brand-600 text-white"
-        : "border-gray-300 bg-surface text-gray-700 hover:bg-gray-50"
+        ? "border-brand-600 bg-brand-600 text-on-solid"
+        : "border-line-strong bg-surface text-ink-2 hover:bg-subtle"
     }`;
 
   return (
     <div className="mt-5 space-y-4">
       {done && new Date(done.at).getTime() > now && (
-        <div className="rounded-2xl border border-red-300 bg-red-50 p-4">
-          <p className="font-semibold text-red-800">
+        <div className="rounded-2xl border border-danger-line bg-danger-soft p-4">
+          <p className="font-semibold text-danger-ink">
             Reset scheduled — {done.counts.order} orders, {done.counts.customer}{" "}
             customers, {done.counts.product} products
           </p>
-          <p className="mt-1 text-sm text-red-700">
+          <p className="mt-1 text-sm text-danger-ink">
             Hidden now, permanently deleted in{" "}
             <span className="font-mono font-semibold tabular-nums">
               {countdown(done.at, now)}
@@ -168,7 +169,7 @@ export function ResetClient() {
                     )
                   }
                 >
-                  {on ? "✓ " : ""}
+                  {on && <Check className="mr-1 inline h-3.5 w-3.5" strokeWidth={3} aria-hidden />}
                   {e.label}
                   {counts && on ? ` (${counts[e.id]})` : ""}
                 </button>
@@ -200,19 +201,19 @@ export function ResetClient() {
           </div>
           {preset === "custom" && (
             <div className="mt-2 flex gap-2">
-              <span className="self-center text-sm text-gray-600">Last</span>
+              <span className="self-center text-sm text-ink-2">Last</span>
               <input
                 type="number"
                 min={1}
                 inputMode="numeric"
-                className={`${input} w-24`}
+                className={`${field} w-24`}
                 value={custom.amount}
                 onChange={(e) =>
                   setCustom({ ...custom, amount: e.target.value })
                 }
               />
               <select
-                className={`${input} w-auto`}
+                className={field}
                 value={custom.unit}
                 onChange={(e) =>
                   setCustom({ ...custom, unit: e.target.value as Unit })
@@ -226,7 +227,7 @@ export function ResetClient() {
           )}
         </div>
 
-        <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-700">
+        <div className="rounded-xl bg-subtle p-3 text-sm text-ink-2">
           {entities.length === 0
             ? "Pick at least one type."
             : counts === null
@@ -235,7 +236,7 @@ export function ResetClient() {
                 ? "Nothing matches — nothing will be deleted."
                 : `${total} item${total === 1 ? "" : "s"} will be hidden now and deleted after the timer.`}
           {entities.includes("customer") && total > 0 && (
-            <span className="block text-xs text-gray-500">
+            <span className="block text-xs text-ink-3">
               Customers&apos; links stop working; their past orders are kept
               unless you also reset Orders.
             </span>
@@ -275,7 +276,7 @@ export function ResetClient() {
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger-ink">{error}</p>}
 
         <button
           type="button"
@@ -283,7 +284,7 @@ export function ResetClient() {
           disabled={
             busy || confirm !== "RESET" || total === 0 || range === undefined
           }
-          className="w-full rounded-xl bg-red-600 py-3 text-base font-semibold text-white transition hover:bg-red-700 active:scale-[0.99] disabled:opacity-40"
+          className="w-full rounded-xl bg-danger py-3 text-base font-semibold text-on-solid transition hover:bg-danger-strong active:scale-[0.99] disabled:opacity-40"
         >
           {busy
             ? "Scheduling…"

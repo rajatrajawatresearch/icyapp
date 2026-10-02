@@ -1,20 +1,23 @@
 import Link from "next/link";
-import { btnPrimary } from "@/components/ui";
+import { Glacier } from "@/components/Glacier";
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-600 text-2xl text-white">
-        🛒
-      </div>
-      <h1 className="text-2xl font-semibold text-gray-900">Mini Marketplace</h1>
-      <p className="mt-2 text-sm text-gray-600">
-        Customers: open the private link your store shared with you. Store staff
-        can sign in below.
-      </p>
-      <Link href="/admin/login" className={`${btnPrimary} mt-8 w-full py-3`}>
-        Admin sign in
-      </Link>
+    <main className="flex min-h-dvh flex-1 flex-col">
+      <Glacier
+        headline="Ordering from the store? Open the link it sent you."
+        className="flex-1 px-6 pt-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] lg:p-12"
+      >
+        <p className="mt-3 max-w-sm text-base text-on-solid/80">
+          Your personal link is your account. There is nothing to sign up for.
+        </p>
+        <Link
+          href="/admin/login"
+          className="mt-8 inline-flex items-center justify-center rounded-xl bg-on-solid px-5 py-3 text-sm font-bold text-brand-700 transition active:scale-[0.97]"
+        >
+          Staff sign in
+        </Link>
+      </Glacier>
     </main>
   );
 }

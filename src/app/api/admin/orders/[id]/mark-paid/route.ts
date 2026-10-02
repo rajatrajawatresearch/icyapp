@@ -4,6 +4,8 @@ import { requireAdminApi } from "@/lib/auth";
 import { jsonError } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { inr } from "@/lib/format";
+import { notifyCustomer, notifyStaff } from "@/lib/notify";
 
 /** POST /api/admin/orders/:id/mark-paid — manual payment confirmation (cash or UPI). */
 export async function POST(
@@ -42,6 +44,22 @@ export async function POST(
     id,
     `order #${order.number} · ${order.payment.method} ₹${Number(order.payment.amount)}`,
   );
+  const amount = inr(Number(order.payment.amount));
+  await notifyCustomer(order.customerId, {
+    type: "payment_confirmed",
+    orderId: id,
+    title: "Payment received",
+    body: `${amount} for order #${order.number} is confirmed. Thank you!`,
+  });
+  if (order.status !== "COMPLETED") {
+    await notifyStaff(order.deliveryPartnerId, {
+      type: "payment_confirmed",
+      orderId: id,
+      title: `Order #${order.number} is paid`,
+      body: "Nothing to collect. Just hand it over.",
+    });
+  }
+
   const fresh = await prisma.order.findUniqueOrThrow({
     where: { id },
     include: orderInclude,

@@ -1,15 +1,19 @@
-// Minimal service worker: makes the app installable and shows a friendly page
-// when offline. It never caches data — orders and stock must always be live.
+// Service worker: makes the app installable, shows a friendly page when
+// offline, and displays push notifications. It never caches data — orders
+// and stock must always be live.
 
+// Standalone page (the app's CSS isn't available offline); colours mirror
+// the theme in globals.css.
 const OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Offline</title>
-<style>body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:24px;text-align:center;background:#f5f7fb;color:#0f172a}
-@media (prefers-color-scheme:dark){body{background:#0a0f1a;color:#f1f4f9}}
-button{margin-top:16px;padding:12px 20px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-size:16px}</style>
-</head><body><div><div style="font-size:40px">📶</div><h1 style="font-size:20px">You're offline</h1>
-<p>Check your internet connection and try again.</p>
-<button onclick="location.reload()">Retry</button></div></body></html>`;
+<style>body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:24px;text-align:center;background:#edf2f8;color:#0a1b33}
+@media (prefers-color-scheme:dark){body{background:#050c17;color:#e8f0fb}}
+h1{font-size:20px;margin:16px 0 4px}p{margin:0;opacity:.75}
+button{margin-top:20px;padding:12px 22px;border:0;border-radius:12px;background:#1273ea;color:#fff;font-size:16px;font-weight:600}</style>
+</head><body><div><h1>You're offline</h1>
+<p>Check your internet connection, then try again.</p>
+<button onclick="location.reload()">Try again</button></div></body></html>`;
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) =>
@@ -25,5 +29,50 @@ self.addEventListener("fetch", (event) => {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         }),
     ),
+  );
+});
+
+// Push: the server sends { title, body, url, tag }.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    // Not JSON — show a generic notification below.
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Icy", {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/badge-96.png",
+      tag: data.tag, // one notification per order, updated in place
+      renotify: Boolean(data.tag),
+      vibrate: [120, 60, 120],
+      data: { url: data.url || "/" },
+    }),
+  );
+});
+
+// Tapping a notification opens (or focuses) that person's own screen.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(
+    (event.notification.data && event.notification.data.url) || "/",
+    self.location.origin,
+  ).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of windows) {
+        if (!client.url.startsWith(self.location.origin)) continue;
+        await client.focus();
+        if (client.url !== target) await client.navigate(target).catch(() => {});
+        return;
+      }
+      await self.clients.openWindow(target);
+    })(),
   );
 });

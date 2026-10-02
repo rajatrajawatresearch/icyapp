@@ -60,7 +60,7 @@ export function SettingsClient({ initial }: { initial: PickupLocation }) {
 
   return (
     <form onSubmit={save} className={`${card} mt-4 space-y-4 p-4`}>
-      <h2 className="font-semibold text-gray-900">Pickup location</h2>
+      <h2 className="font-semibold text-ink">Pickup location</h2>
 
       <div>
         <label className={label} htmlFor="gmaps-link">
@@ -83,8 +83,8 @@ export function SettingsClient({ initial }: { initial: PickupLocation }) {
             {busy === "link" ? "Reading…" : "Use"}
           </button>
         </div>
-        <p className="mt-1 text-xs text-gray-500">
-          In Google Maps: open your shop → Share → Copy link.
+        <p className="mt-1 text-xs text-ink-3">
+          In Google Maps, open your shop, tap Share, then Copy link.
         </p>
       </div>
 
@@ -117,15 +117,15 @@ export function SettingsClient({ initial }: { initial: PickupLocation }) {
           href={googleMapsUrl(point)}
           target="_blank"
           rel="noreferrer"
-          className="block text-sm text-brand-700 underline"
+          className="block text-sm font-semibold text-brand-700"
         >
-          Check this pin in Google Maps ↗
+          Check this pin in Google Maps
         </a>
       )}
 
       {message && (
         <p
-          className={`text-sm ${message.ok ? "text-emerald-700" : "text-red-600"}`}
+          className={`text-sm ${message.ok ? "text-success-ink" : "text-danger-ink"}`}
         >
           {message.text}
         </p>

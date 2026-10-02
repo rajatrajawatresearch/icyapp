@@ -4,6 +4,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { UserError, jsonError, parseJson } from "@/lib/api";
 import { resolveCustomer } from "@/lib/customer";
+import { inr } from "@/lib/format";
+import { notifyStore } from "@/lib/notify";
 
 const CreateOrderSchema = z
   .object({
@@ -85,7 +87,7 @@ export async function POST(req: Request) {
         total = total.add(p.price.mul(qty));
       }
 
-      return tx.order.create({
+      const created = await tx.order.create({
         data: {
           customerId: customer.id,
           customerName: customer.name,
@@ -112,8 +114,19 @@ export async function POST(req: Request) {
         },
         select: { id: true, number: true },
       });
+      return { ...created, total: Number(total) };
     });
-    return NextResponse.json(order, { status: 201 });
+
+    await notifyStore({
+      type: "new_order",
+      orderId: order.id,
+      title: `New order #${order.number}`,
+      body: `${customer.name}, ${inr(order.total)} by ${paymentMethod === "UPI" ? "UPI" : "cash"}, for ${fulfilmentType === "DELIVERY" ? "delivery" : "pickup"}.`,
+    });
+    return NextResponse.json(
+      { id: order.id, number: order.number },
+      { status: 201 },
+    );
   } catch (e) {
     if (e instanceof UserError) return jsonError(e.message, e.status);
     throw e;

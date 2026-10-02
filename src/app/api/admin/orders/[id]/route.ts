@@ -6,6 +6,7 @@ import { UserError, jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { ADMIN_SETTABLE_STATUSES } from "@/lib/constants";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { notifyCustomer, notifyStaff } from "@/lib/notify";
 
 const UpdateStatusSchema = z.object({
   status: z.enum(ADMIN_SETTABLE_STATUSES),
@@ -64,6 +65,46 @@ export async function PATCH(
         id,
         `order #${order.number}: ${order.status} → ${status}`,
       );
+
+      const pickup = order.fulfilmentType === "PICKUP";
+      const forCustomer = {
+        CONFIRMED: {
+          title: `Order #${order.number} confirmed`,
+          body: "The store is getting your order ready.",
+        },
+        OUT_FOR_DELIVERY: pickup
+          ? {
+              title: `Order #${order.number} is ready for pickup`,
+              body: "Come and collect it from the store.",
+            }
+          : {
+              title: `Order #${order.number} is on the way`,
+              body: "Your order is out for delivery.",
+            },
+        COMPLETED: {
+          title: `Order #${order.number} completed`,
+          body: order.receivedAt
+            ? "Thank you for ordering."
+            : "Open your orders and confirm you received it.",
+        },
+        CANCELLED: {
+          title: `Order #${order.number} cancelled`,
+          body: "The store cancelled this order. Contact the store if this is a mistake.",
+        },
+      }[status];
+      await notifyCustomer(order.customerId, {
+        type: `order_${status.toLowerCase()}`,
+        orderId: id,
+        ...forCustomer,
+      });
+      if (status === "CANCELLED") {
+        await notifyStaff(order.deliveryPartnerId, {
+          type: "order_cancelled",
+          orderId: id,
+          title: `Order #${order.number} cancelled`,
+          body: "Don't deliver this order.",
+        });
+      }
     }
     const fresh = await prisma.order.findUniqueOrThrow({
       where: { id },

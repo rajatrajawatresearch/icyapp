@@ -1,31 +1,33 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
-import { SURFACE_COLOR, THEME_INIT_SCRIPT } from "@/lib/theme";
+import { ThemeColorSync } from "@/components/ThemeColorSync";
+import { APP_NAME, APP_TAGLINE, ICONS } from "@/lib/brand";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// One family for everything: weight and size carry the hierarchy.
+// latin-ext is preloaded because it holds the rupee sign shown on every price.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: { default: "Mini Marketplace", template: "%s · Mini Marketplace" },
-  description: "Order from your local store with your private link.",
+  title: { default: APP_NAME, template: `%s | ${APP_NAME}` },
+  description: APP_TAGLINE,
   robots: { index: false, follow: false },
-  // Customer pages override this with their own per-link manifest (u/[token]/layout.tsx).
+  // Customer and delivery pages override this with their own manifest.
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/pwa-icon/192", apple: "/pwa-icon/180" },
-  appleWebApp: {
-    capable: true,
-    title: "Store Admin",
-    statusBarStyle: "default",
+  icons: {
+    icon: [
+      { url: ICONS.svg, type: "image/svg+xml" },
+      { url: ICONS.favicon, sizes: "48x48", type: "image/png" },
+    ],
+    apple: ICONS.apple,
   },
+  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
   formatDetection: { telephone: false },
 };
 
@@ -33,10 +35,6 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: SURFACE_COLOR.light },
-    { media: "(prefers-color-scheme: dark)", color: SURFACE_COLOR.dark },
-  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -45,13 +43,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col font-sans">
         {children}
+        <ThemeColorSync />
         <PwaRegister />
       </body>
     </html>

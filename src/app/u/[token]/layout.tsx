@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { APP_NAME } from "@/lib/brand";
 
 export async function generateMetadata({
   params,
@@ -8,7 +9,7 @@ export async function generateMetadata({
   const { token } = await params;
   return {
     manifest: `/u/${token}/manifest.webmanifest`,
-    appleWebApp: { capable: true, title: "Shop", statusBarStyle: "default" },
+    appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
   };
 }
 

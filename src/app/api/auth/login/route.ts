@@ -3,11 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { jsonError, parseJson } from "@/lib/api";
-import {
-  SESSION_COOKIE,
-  createSessionToken,
-  sessionCookieOptions,
-} from "@/lib/auth";
+import { setSessionCookie } from "@/lib/auth";
 
 const LoginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -29,10 +25,6 @@ export async function POST(req: Request) {
     return jsonError("This account has been deactivated", 403);
 
   const res = NextResponse.json({ role: admin.role, name: admin.name });
-  res.cookies.set(
-    SESSION_COOKIE,
-    await createSessionToken(admin.id),
-    sessionCookieOptions(),
-  );
+  await setSessionCookie(res, admin);
   return res;
 }

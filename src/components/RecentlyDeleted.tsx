@@ -43,23 +43,23 @@ export function RecentlyDeleted({
   }
 
   return (
-    <section className="mt-8 rounded-xl border border-dashed border-red-300 bg-red-50/60 p-4">
-      <h2 className="text-sm font-semibold text-red-800">Recently deleted</h2>
-      <p className="text-xs text-red-700/80">
+    <section className="mt-8 rounded-2xl border border-dashed border-danger-line bg-danger-soft/60 p-4">
+      <h2 className="text-sm font-semibold text-danger-ink">Recently deleted</h2>
+      <p className="text-xs text-danger-ink/80">
         Permanently removed when the timer hits 0:00.
       </p>
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-      <ul className="mt-3 divide-y divide-red-200">
+      {error && <p className="mt-2 text-sm text-danger-ink">{error}</p>}
+      <ul className="mt-3 divide-y divide-danger-line">
         {pending.map((r) => (
           <li
             key={r.id}
             className="flex items-center justify-between gap-3 py-2"
           >
-            <span className="min-w-0 truncate text-sm text-gray-800">
+            <span className="min-w-0 truncate text-sm text-ink">
               {r.label}
             </span>
             <span className="flex shrink-0 items-center gap-3">
-              <span className="font-mono text-sm tabular-nums text-red-700">
+              <span className="font-mono text-sm tabular-nums text-danger-ink">
                 {countdown(r.scheduledDeleteAt!, now)}
               </span>
               <button

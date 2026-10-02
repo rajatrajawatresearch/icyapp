@@ -1,60 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { UserRound } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
+import { Brand } from "@/components/Logo";
+import { NotificationBell } from "@/components/NotificationBell";
 import { ThemePicker } from "@/components/ThemePicker";
+import { iconBtn } from "@/components/ui";
 
 export function DeliveryHeader({ name }: { name: string }) {
-  const router = useRouter();
-  const pathname = usePathname();
-
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/admin/login");
-    router.refresh();
-  }
+  const onAccount = usePathname().startsWith("/delivery/account");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-surface/95 backdrop-blur">
-      <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-2.5">
         <Link href="/delivery" className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900">🛵 Deliveries</p>
-          <p className="truncate text-xs text-gray-500">
-            {name} · Delivery partner
-          </p>
+          <Brand sub={`${name}, delivery`} />
         </Link>
         <div className="flex shrink-0 items-center gap-2">
-          <InstallButton className="hidden sm:inline-flex" />
+          {/* Room for this only on wider screens; phones get it on the account page. */}
+          <div className="hidden sm:block">
+            <InstallButton />
+          </div>
+          <NotificationBell endpoint="/api/notifications" href="/delivery" />
           <ThemePicker />
           <Link
             href="/delivery/account"
             aria-label="My account"
-            className={`grid h-9 w-9 place-items-center rounded-full border ${
-              pathname.startsWith("/delivery/account")
-                ? "border-brand-600 bg-brand-50 text-brand-700"
-                : "border-gray-300 bg-surface text-gray-700"
-            }`}
+            aria-current={onAccount ? "page" : undefined}
+            className={`${iconBtn} ${onAccount ? "border-brand-300 bg-brand-50 text-brand-700" : ""}`}
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-4.5 w-4.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden
-            >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 21a8 8 0 0 1 16 0" />
-            </svg>
+            <UserRound className="h-[18px] w-[18px]" aria-hidden />
           </Link>
-          <button
-            type="button"
-            onClick={logout}
-            className="px-1 text-sm text-gray-600"
-          >
-            Log out
-          </button>
         </div>
       </div>
     </header>

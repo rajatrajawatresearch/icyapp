@@ -20,11 +20,16 @@ export async function POST(
   });
   if (!existing) return jsonError("Customer not found", 404);
 
-  const customer = await prisma.customer.update({
-    where: { id },
-    data: { token: generateCustomerToken(), isActive: true },
-    include: customerInclude,
-  });
+  // Push notifications link to the customer's page, so devices that subscribed
+  // through the old link must be dropped or they would receive the new one.
+  const [customer] = await prisma.$transaction([
+    prisma.customer.update({
+      where: { id },
+      data: { token: generateCustomerToken(), isActive: true },
+      include: customerInclude,
+    }),
+    prisma.pushSubscription.deleteMany({ where: { customerId: id } }),
+  ]);
   await audit(
     auth.admin.id,
     "regenerated_token",

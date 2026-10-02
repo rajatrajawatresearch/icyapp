@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { requireAdminPage } from "@/lib/auth";
-import { AdminsClient } from "./AdminsClient";
+import { TeamClient } from "../../TeamClient";
 
-export const metadata: Metadata = { title: "Admins" };
+export const metadata: Metadata = { title: "Team" };
 
-export default async function AdminsPage() {
+export default async function TeamPage() {
   const me = await requireAdminPage({ superOnly: true });
-  return <AdminsClient myId={me.id} />;
+  return <TeamClient myId={me.id} scope="all" />;
 }

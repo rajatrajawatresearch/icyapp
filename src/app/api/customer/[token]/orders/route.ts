@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError } from "@/lib/api";
+import { jsonError, jsonWithEtag } from "@/lib/api";
 import { resolveCustomer } from "@/lib/customer";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
 
 /** GET /api/customer/:token/orders — the customer's own orders (polled by /u/[token]/orders). */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
@@ -20,5 +19,5 @@ export async function GET(
     take: 50,
     include: orderInclude,
   });
-  return NextResponse.json({ orders: orders.map(toOrderDTO) });
+  return jsonWithEtag(req, { orders: orders.map(toOrderDTO) });
 }

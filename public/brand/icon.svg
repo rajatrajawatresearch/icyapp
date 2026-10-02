@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Icy">
+  <defs>
+    <linearGradient id="bg" x1=".1" y1="0" x2=".9" y2="1">
+      <stop offset="0" stop-color="#5ecbff"/>
+      <stop offset=".5" stop-color="#1877f2"/>
+      <stop offset="1" stop-color="#0932a8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".18" r=".7">
+      <stop offset="0" stop-color="#fff" stop-opacity=".5"/>
+      <stop offset=".6" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".55"/>
+      <stop offset=".35" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="top" x1=".15" y1=".1" x2=".85" y2=".9">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#bfe8ff"/>
+    </linearGradient>
+    <linearGradient id="left" x1=".1" y1="0" x2=".8" y2="1">
+      <stop offset="0" stop-color="#e2f6ff"/>
+      <stop offset="1" stop-color="#7fc9ff"/>
+    </linearGradient>
+    <linearGradient id="right" x1=".2" y1="0" x2=".9" y2="1">
+      <stop offset="0" stop-color="#63b8ff"/>
+      <stop offset="1" stop-color="#1557d6"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-60%" width="160%" height="220%">
+      <feGaussianBlur stdDeviation="15"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
+  <rect x="3" y="3" width="506" height="506" rx="113" fill="none" stroke="url(#rim)" stroke-width="6"/>
+
+  <g transform="translate(256 262) scale(1.08) translate(-256 -262)">
+    <!-- contact shadow under the cube -->
+    <ellipse cx="256" cy="420" rx="126" ry="24" fill="#031b63" opacity=".55" filter="url(#soft)"/>
+
+    <!-- ice cube: lit from the top-left; corners softened with a matching round stroke -->
+    <g stroke-linejoin="round" stroke-width="18">
+      <path d="M124 186 256 262V410L124 334Z" fill="url(#left)" stroke="url(#left)"/>
+      <path d="M388 186 256 262V410L388 334Z" fill="url(#right)" stroke="url(#right)"/>
+      <path d="M256 110 388 186 256 262 124 186Z" fill="url(#top)" stroke="url(#top)"/>
+    </g>
+
+    <!-- refraction: the far corner glowing through the block -->
+    <path d="M256 262 150 323V231Z" fill="url(#core)" opacity=".55"/>
+    <path d="M256 262 362 323V231Z" fill="#fff" opacity=".14"/>
+    <g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="4" opacity=".4">
+      <path d="M256 262 140 329M256 262 372 329"/>
+    </g>
+
+    <!-- light catching the near edges -->
+    <g fill="none" stroke="#fff" stroke-linecap="round">
+      <path d="M134 191 256 262" stroke-width="8" opacity=".95"/>
+      <path d="M256 262 378 191" stroke-width="7" opacity=".6"/>
+      <path d="M256 272V400" stroke-width="7" opacity=".8"/>
+      <path d="M150 168 256 107 300 132" stroke-width="6" opacity=".9"/>
+    </g>
+
+    <!-- gloss streak on the lit face, frost bubbles in the shaded one -->
+    <path d="M144 220 170 235V300L144 285Z" fill="#fff" opacity=".6"/>
+    <path d="M182 244 192 250V296L182 290Z" fill="#fff" opacity=".35"/>
+    <g fill="#fff">
+      <circle cx="340" cy="290" r="9" opacity=".5"/>
+      <circle cx="314" cy="336" r="5.5" opacity=".42"/>
+      <circle cx="356" cy="328" r="4" opacity=".38"/>
+    </g>
+  </g>
+
+  <!-- sparkles -->
+  <path d="M410 86c4.5 24 11 30.500 35 35-24 4.500-30.500 11-35 35-4.500-24-11-30.500-35-35 24-4.500 30.500-11 35-35Z" fill="#fff"/>
+  <path d="M98 372c2.300 12 5.700 15.400 17.700 17.700-12 2.300-15.400 5.700-17.700 17.700-2.300-12-5.700-15.400-17.700-17.700 12-2.300 15.400-5.700 17.700-17.700Z" fill="#fff" opacity=".85"/>
+</svg>

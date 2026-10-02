@@ -1,14 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Banknote,
+  Bike,
+  CircleAlert,
+  CircleCheck,
+  MapPin,
+  MessageCircle,
+  Navigation,
+  Phone,
+} from "lucide-react";
 import type { OrderDTO } from "@/lib/dto";
 import { POLL_INTERVAL_MS } from "@/lib/constants";
-import { api, errorMessage } from "@/lib/client-api";
+import { api, createPoller, errorMessage } from "@/lib/client-api";
 import { inr, timeAgo } from "@/lib/format";
 import { googleDirectionsUrl } from "@/lib/maps";
+import { ListSkeleton } from "@/components/Skeleton";
 import { PaymentBadge, StatusBadge } from "@/components/StatusBadge";
 import { useNow } from "@/components/useNow";
-import { btnPrimary, btnSecondary, btnSuccess, card } from "@/components/ui";
+import {
+  btnPrimary,
+  btnSecondary,
+  btnSuccess,
+  card,
+  emptyState,
+  pill,
+} from "@/components/ui";
 
 type Data = { active: OrderDTO[]; doneToday: OrderDTO[] };
 
@@ -22,32 +40,32 @@ export function DeliveryClient() {
   const [data, setData] = useState<Data | null>(null);
   const [tab, setTab] = useState<"active" | "done">("active");
   const [error, setError] = useState<string | null>(null);
+  const poll = useMemo(() => createPoller<Data>("/api/delivery/orders"), []);
   const seen = useRef<Set<string> | null>(null);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const now = useNow(15000);
 
   const load = useCallback(async () => {
     try {
-      const d = await api<Data>("/api/delivery/orders");
+      const result = await poll();
+      setError(null);
+      if (!result.changed) return;
+      const d = result.data;
       if (seen.current) {
         const arrived = d.active
           .filter((o) => !seen.current!.has(o.id))
           .map((o) => o.id);
         if (arrived.length) setNewIds((prev) => new Set([...prev, ...arrived]));
       }
-      seen.current = new Set([
-        ...(seen.current ?? []),
-        ...d.active.map((o) => o.id),
-      ]);
+      seen.current = new Set([...(seen.current ?? []), ...d.active.map((o) => o.id)]);
       setData(d);
-      setError(null);
     } catch (e) {
       setError(errorMessage(e));
     }
-  }, []);
+  }, [poll]);
 
   useEffect(() => {
-     
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- first fetch, then polling
     load();
     const t = setInterval(
       () => document.visibilityState === "visible" && load(),
@@ -56,15 +74,14 @@ export function DeliveryClient() {
     return () => clearInterval(t);
   }, [load]);
 
-  const list =
-    tab === "active" ? (data?.active ?? []) : (data?.doneToday ?? []);
+  const list = tab === "active" ? (data?.active ?? []) : (data?.doneToday ?? []);
   const cashToday = (data?.doneToday ?? [])
     .filter((o) => o.payment?.method === "CASH" && o.payment.status === "PAID")
     .reduce((s, o) => s + o.total, 0);
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1">
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {(
           [
             ["active", `To deliver${data ? ` (${data.active.length})` : ""}`],
@@ -74,8 +91,11 @@ export function DeliveryClient() {
           <button
             key={key}
             type="button"
+            aria-pressed={tab === key}
             onClick={() => setTab(key)}
-            className={`rounded-lg py-2 text-sm font-semibold ${tab === key ? "bg-surface text-gray-900 shadow-sm" : "text-gray-600"}`}
+            className={`rounded-lg py-2.5 text-sm font-bold transition ${
+              tab === key ? "bg-surface text-ink shadow-xs" : "text-ink-3"
+            }`}
           >
             {text}
           </button>
@@ -83,19 +103,19 @@ export function DeliveryClient() {
       </div>
 
       {tab === "done" && cashToday > 0 && (
-        <p className="mt-3 rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
-          💵 Cash collected today: {inr(cashToday)} — hand this over to the
-          store.
+        <p className="mt-3 flex items-center gap-2.5 rounded-2xl bg-success-soft p-4 text-sm font-semibold text-success-ink">
+          <Banknote className="h-5 w-5 shrink-0" aria-hidden />
+          You collected {inr(cashToday)} in cash today. Hand it over to the store.
         </p>
       )}
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
       {data === null ? (
-        <p className="mt-6 text-sm text-gray-500">Loading…</p>
+        <ListSkeleton rows={2} className="h-72" />
       ) : list.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+        <p className={`${emptyState} mt-4`}>
           {tab === "active"
-            ? "No deliveries assigned right now. New ones appear here automatically."
+            ? "No deliveries for you right now. New ones appear here by themselves."
             : "Nothing delivered yet today."}
         </p>
       ) : (
@@ -161,18 +181,14 @@ function DeliveryCard({
 
   function deliver() {
     if (cashDue) {
-      if (
-        !window.confirm(
-          `Collected ${inr(o.total)} cash from ${o.customer.name}?`,
-        )
-      )
+      if (!window.confirm(`Collected ${inr(o.total)} cash from ${o.customer.name}?`))
         return;
       return act({ action: "delivered", collectCash: true });
     }
     if (
       upiDue &&
       !window.confirm(
-        "UPI payment is not confirmed by the store yet. Mark delivered anyway?",
+        "The store has not confirmed the UPI payment yet. Mark delivered anyway?",
       )
     )
       return;
@@ -180,107 +196,117 @@ function DeliveryCard({
   }
 
   return (
-    <li
-      className={`${card} p-4 ${isNew ? "border-brand-600 ring-2 ring-brand-200" : ""}`}
-    >
+    <li className={`${card} p-4 ${isNew ? "border-brand-400 ring-2 ring-brand-200" : ""}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-lg font-bold text-gray-900">
+          <p className="text-xl leading-tight font-extrabold tracking-tight text-ink">
             #{o.number}
             {isNew && (
-              <span className="ml-2 rounded bg-brand-600 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-white">
+              <span className={`${pill} ml-2 bg-brand-600 align-middle text-on-solid`}>
                 New
               </span>
             )}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-ink-3">
             Ordered {timeAgo(o.createdAt, now)}
-            {done &&
-              o.deliveredAt &&
-              ` · delivered ${timeAgo(o.deliveredAt, now)}`}
+            {done && o.deliveredAt && `, delivered ${timeAgo(o.deliveredAt, now)}`}
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1.5">
           <StatusBadge status={o.status} />
           {pay && <PaymentBadge method={pay.method} status={pay.status} />}
         </div>
       </div>
 
-      {/* Customer + contact */}
-      <div className="mt-3 rounded-xl bg-gray-50 p-3">
-        <p className="font-semibold text-gray-900">{o.customer.name}</p>
-        <p className="text-sm text-gray-600">{o.customer.phone}</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <a
-            href={`tel:${o.customer.phone.replace(/\s/g, "")}`}
-            className={`${btnSecondary} py-2.5`}
-          >
-            📞 Call
+      {/* Who to hand it to, and how to reach them */}
+      <div className="mt-3 rounded-xl bg-subtle p-3">
+        <p className="font-bold text-ink">{o.customer.name}</p>
+        <p className="text-sm text-ink-2">{o.customer.phone}</p>
+        <div className="mt-2.5 grid grid-cols-2 gap-2">
+          <a href={`tel:${o.customer.phone.replace(/\s/g, "")}`} className={btnSecondary}>
+            <Phone className="h-4 w-4" aria-hidden />
+            Call
           </a>
           <a
             href={whatsappUrl(o.customer.phone)}
             target="_blank"
             rel="noreferrer"
-            className={`${btnSecondary} py-2.5`}
+            className={btnSecondary}
           >
-            💬 WhatsApp
+            <MessageCircle className="h-4 w-4" aria-hidden />
+            WhatsApp
           </a>
         </div>
       </div>
 
-      {/* Location */}
+      {/* Where */}
       <div className="mt-3">
-        <p className="text-sm text-gray-800">
-          <span className="font-semibold">📍 Address:</span> {o.deliveryAddress}
+        <p className="flex items-start gap-2 text-sm text-ink">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+          {o.deliveryAddress}
         </p>
         <a
           href={googleDirectionsUrl(point, o.deliveryAddress)}
           target="_blank"
           rel="noreferrer"
-          className={`${btnPrimary} mt-2 w-full py-3`}
+          className={`${btnPrimary} mt-2.5 w-full py-3`}
         >
-          🧭 Navigate in Google Maps{point ? "" : " (by address)"}
+          <Navigation className="h-4 w-4" aria-hidden />
+          {point ? "Navigate in Google Maps" : "Find the address in Google Maps"}
         </a>
       </div>
 
-      {/* Items */}
-      <ul className="mt-3 space-y-0.5 text-sm text-gray-800">
+      {/* What */}
+      <ul className="mt-4 space-y-1 text-sm text-ink">
         {o.items.map((i) => (
           <li key={i.id} className="flex justify-between gap-2">
             <span>
               {i.qty} × {i.productName}
             </span>
-            <span className="tabular-nums text-gray-600">
+            <span className="text-ink-2 tabular-nums">
               {inr(i.qty * i.priceAtOrder)}
             </span>
           </li>
         ))}
-        <li className="flex justify-between border-t border-gray-200 pt-1 font-semibold">
+        <li className="flex justify-between border-t border-line pt-2 text-base font-extrabold">
           <span>Total</span>
           <span className="tabular-nums">{inr(o.total)}</span>
         </li>
       </ul>
 
-      {/* Payment instruction */}
+      {/* What to do about money */}
       {!done && pay && (
         <p
-          className={`mt-3 rounded-xl p-3 text-sm font-medium ${
+          className={`mt-3 flex items-center gap-2.5 rounded-xl p-3 text-sm font-semibold ${
             cashDue
-              ? "bg-orange-50 text-orange-800"
+              ? "bg-warning-soft text-warning-ink"
               : upiDue
-                ? "bg-amber-50 text-amber-800"
-                : "bg-emerald-50 text-emerald-800"
+                ? "bg-warning-soft text-warning-ink"
+                : "bg-success-soft text-success-ink"
           }`}
         >
+          {cashDue ? (
+            <Banknote className="h-5 w-5 shrink-0" aria-hidden />
+          ) : upiDue ? (
+            <CircleAlert className="h-5 w-5 shrink-0" aria-hidden />
+          ) : (
+            <CircleCheck className="h-5 w-5 shrink-0" aria-hidden />
+          )}
           {cashDue
-            ? `💵 Collect ${inr(o.total)} in cash`
+            ? `Collect ${inr(o.total)} in cash`
             : upiDue
-              ? "📱 UPI payment not confirmed yet — check with the store before handing over"
-              : "✅ Already paid — just hand over"}
+              ? "UPI not confirmed yet. Check with the store before handing over."
+              : "Already paid. Just hand it over."}
+        </p>
+      )}
+      {done && o.receivedAt && (
+        <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-success-ink">
+          <CircleCheck className="h-4 w-4 shrink-0" aria-hidden />
+          The customer confirmed they received it
         </p>
       )}
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-danger-ink">{error}</p>}
 
       {!done && (
         <div className="mt-3 grid gap-2">
@@ -291,20 +317,22 @@ function DeliveryCard({
               disabled={busy}
               onClick={() => act({ action: "start" })}
             >
-              🛵 Start delivery (picked up)
+              <Bike className="h-4 w-4" aria-hidden />
+              Start delivery
             </button>
           )}
           <button
             type="button"
-            className={`${btnSuccess} py-3 text-base`}
+            className={`${btnSuccess} py-3.5 text-base`}
             disabled={busy}
             onClick={deliver}
           >
+            <CircleCheck className="h-5 w-5" aria-hidden />
             {busy
               ? "Saving…"
               : cashDue
-                ? `✅ Cash ${inr(o.total)} collected · Delivered`
-                : "✅ Mark delivered"}
+                ? `Collected ${inr(o.total)} and delivered`
+                : "Mark delivered"}
           </button>
         </div>
       )}

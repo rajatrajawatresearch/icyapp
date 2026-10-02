@@ -5,6 +5,8 @@ import { UserError, jsonError } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { saveImage } from "@/lib/uploads";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { inr } from "@/lib/format";
+import { notifyCustomer } from "@/lib/notify";
 
 /** POST /api/admin/orders/:id/qr — multipart `file`; attaches a UPI QR to a pending UPI payment. */
 export async function POST(
@@ -41,6 +43,12 @@ export async function POST(
   }
 
   await audit(auth.admin.id, "uploaded_qr", id, `order #${order.number}`);
+  await notifyCustomer(order.customerId, {
+    type: "qr_ready",
+    orderId: id,
+    title: `Pay for order #${order.number}`,
+    body: `Your UPI QR is ready. Scan it to pay ${inr(Number(order.payment.amount))}.`,
+  });
   const fresh = await prisma.order.findUniqueOrThrow({
     where: { id },
     include: orderInclude,

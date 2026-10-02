@@ -39,32 +39,42 @@ enum PaymentStatus {
 }
 
 model Customer {
-  id                String    @id @default(cuid())
+  id                String             @id @default(cuid())
   name              String
   phone             String
   /// Private-link bearer credential: /u/<token>
-  token             String    @unique
-  isActive          Boolean   @default(true)
+  token             String             @unique
+  isActive          Boolean            @default(true)
   scheduledDeleteAt DateTime?
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime           @default(now())
   orders            Order[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
 
   @@index([scheduledDeleteAt])
 }
 
 model Admin {
-  id                String     @id @default(cuid())
+  id                String             @id @default(cuid())
   name              String
-  email             String     @unique
+  email             String             @unique
   passwordHash      String
-  role              Role       @default(ADMIN)
+  role              Role               @default(ADMIN)
   /// Deactivated admins cannot sign in; rows are kept for audit history.
-  isActive          Boolean    @default(true)
-  createdAt         DateTime   @default(now())
+  isActive          Boolean            @default(true)
+  /// SHA-256 of this account's private sign-in link token (/a/<token>). Only
+  /// the hash is stored: the link gives full access, so it is shown once.
+  accessTokenHash   String?            @unique
+  accessTokenAt     DateTime?
+  /// Bumped to end every session of this account (link refreshed, password changed).
+  sessionVersion    Int                @default(0)
+  createdAt         DateTime           @default(now())
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
   products          Product[]
   confirmedPayments Payment[]
   auditLogs         AuditLog[]
-  deliveries        Order[]    @relation("DeliveryAssignments")
+  deliveries        Order[]            @relation("DeliveryAssignments")
 }
 
 model Product {
@@ -104,10 +114,13 @@ model Order {
   deliveryPartnerId String?
   deliveryPartner   Admin?         @relation("DeliveryAssignments", fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
   deliveredAt       DateTime?
+  /// Set when the customer taps "I received my order".
+  receivedAt        DateTime?
   scheduledDeleteAt DateTime?
   createdAt         DateTime       @default(now())
   items             OrderItem[]
   payment           Payment?
+  notifications     Notification[]
 
   @@index([customerId, createdAt])
   @@index([deliveryPartnerId, status])
@@ -167,4 +180,41 @@ model StoreSettings {
   pickupLat     Float?
   pickupLng     Float?
   updatedAt     DateTime @updatedAt
+}
+
+/// In-app notification for exactly one recipient: a staff account or a customer.
+model Notification {
+  id         String    @id @default(cuid())
+  adminId    String?
+  admin      Admin?    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orderId    String?
+  order      Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Machine-readable event, e.g. "new_order", "qr_ready", "delivered".
+  type       String
+  title      String
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([createdAt])
+}
+
+/// A browser's Web Push subscription, owned by a staff account or a customer.
+model PushSubscription {
+  id         String    @id @default(cuid())
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  adminId    String?
+  admin      Admin?    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+
+  @@index([adminId])
+  @@index([customerId])
 }

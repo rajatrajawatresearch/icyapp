@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 
 // Chrome's install prompt event (not in the standard DOM typings).
 type BeforeInstallPromptEvent = Event & {
@@ -36,18 +37,9 @@ export function InstallButton({ className = "" }: { className?: string }) {
         await prompt.userChoice;
         setPrompt(null);
       }}
-      className={`inline-flex h-9 items-center gap-1.5 rounded-full bg-brand-600 px-3 text-sm font-medium text-white ${className}`}
+      className={`inline-flex h-10 items-center gap-2 rounded-xl bg-brand-600 px-3.5 text-sm font-semibold text-on-solid shadow-brand ${className}`}
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        aria-hidden
-      >
-        <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" />
-      </svg>
+      <Download className="h-4 w-4" aria-hidden />
       Install app
     </button>
   );
