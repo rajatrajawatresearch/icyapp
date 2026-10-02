@@ -3,15 +3,20 @@
 
 export type ThemeMode = "light" | "dark" | "system";
 
-/** Accent choices, named after ice-candy flavours. Ids match [data-accent] in globals.css. */
+/** Accent choices. Ids match [data-accent] in globals.css. */
 export const ACCENTS = [
-  { id: "blue", label: "Ice" },
-  { id: "green", label: "Pista" },
-  { id: "purple", label: "Kala khatta" },
-  { id: "pink", label: "Rose" },
+  { id: "brown", label: "Brown" },
+  { id: "gray", label: "Gray" },
+  { id: "red", label: "Red" },
+  { id: "green", label: "Green" },
 ] as const;
 export type AccentId = (typeof ACCENTS)[number]["id"];
-export const DEFAULT_ACCENT: AccentId = "blue";
+export const DEFAULT_ACCENT: AccentId = "brown";
+
+/** A stored accent from an older palette (e.g. "blue") falls back to the default. */
+export function toAccentId(value: string | null | undefined): AccentId {
+  return ACCENTS.some((a) => a.id === value) ? (value as AccentId) : DEFAULT_ACCENT;
+}
 
 export const THEME_STORAGE_KEY = "mm-theme";
 export const ACCENT_STORAGE_KEY = "mm-accent";

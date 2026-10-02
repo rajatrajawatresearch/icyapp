@@ -17,6 +17,7 @@ import { api, createPoller, errorMessage } from "@/lib/client-api";
 import { inr, timeAgo } from "@/lib/format";
 import { googleDirectionsUrl } from "@/lib/maps";
 import { ListSkeleton } from "@/components/Skeleton";
+import { OrderLines } from "@/components/OrderLines";
 import { PaymentBadge, StatusBadge } from "@/components/StatusBadge";
 import { useNow } from "@/components/useNow";
 import {
@@ -257,22 +258,7 @@ function DeliveryCard({
       </div>
 
       {/* What */}
-      <ul className="mt-4 space-y-1 text-sm text-ink">
-        {o.items.map((i) => (
-          <li key={i.id} className="flex justify-between gap-2">
-            <span>
-              {i.qty} × {i.productName}
-            </span>
-            <span className="text-ink-2 tabular-nums">
-              {inr(i.qty * i.priceAtOrder)}
-            </span>
-          </li>
-        ))}
-        <li className="flex justify-between border-t border-line pt-2 text-base font-extrabold">
-          <span>Total</span>
-          <span className="tabular-nums">{inr(o.total)}</span>
-        </li>
-      </ul>
+      <OrderLines order={o} />
 
       {/* What to do about money */}
       {!done && pay && (

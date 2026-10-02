@@ -114,6 +114,9 @@ model Order {
   deliveryPartnerId String?
   deliveryPartner   Admin?         @relation("DeliveryAssignments", fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
   deliveredAt       DateTime?
+  /// Delivery charge on this order: the store's charge at order time, or a
+  /// custom amount an admin set afterwards. Included in the payment amount.
+  deliveryFee       Decimal        @default(0) @db.Decimal(10, 2)
   /// Set when the customer taps "I received my order".
   receivedAt        DateTime?
   scheduledDeleteAt DateTime?
@@ -175,11 +178,15 @@ model AuditLog {
 
 /// Single-row store configuration (id is always 1), edited by the super admin.
 model StoreSettings {
-  id            Int      @id @default(1)
-  pickupAddress String?
-  pickupLat     Float?
-  pickupLng     Float?
-  updatedAt     DateTime @updatedAt
+  id                Int      @id @default(1)
+  pickupAddress     String?
+  pickupLat         Float?
+  pickupLng         Float?
+  /// Charge added to every delivery order (0 = free delivery).
+  deliveryFee       Decimal  @default(0) @db.Decimal(10, 2)
+  /// Delivery is free when the items are worth at least this much (null = never free).
+  freeDeliveryAbove Decimal? @db.Decimal(10, 2)
+  updatedAt         DateTime @updatedAt
 }
 
 /// In-app notification for exactly one recipient: a staff account or a customer.

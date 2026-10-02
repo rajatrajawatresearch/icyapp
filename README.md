@@ -33,11 +33,12 @@ npx next dev -p 3210          # http://localhost:3210
 - **Notifications.** Every order event creates a notification for the people who must act on it (store staff, the assigned rider, the customer). They appear under the bell, and as push notifications on devices that opted in (`src/lib/notify.ts`, `src/lib/push.ts`, `public/sw.js`).
 - **Sign-in links for staff.** A private link signs a staff member in without a password. Only its hash is stored, so it is shown once; refreshing it kills the old link and signs that account out everywhere (`src/lib/access-link.ts`). A super admin can refresh anyone's link, an admin only delivery partners'.
 - **Deleting.** Super admin only. A delete is scheduled 1–30 minutes out; the row is hidden at once, can be undone until the timer ends, and is then purged lazily. Deleting a customer or product never destroys order history.
+- **Delivery charge.** The super admin sets a charge per delivery and, optionally, an order value from which delivery is free (Settings). The server works the charge out when the order is placed (`src/lib/pricing.ts`) and stores it on the order; it is part of the amount to pay. An admin can set a different charge on a single order while its payment is pending — the customer is notified and a UPI QR made for the old amount is removed.
 - **Polling.** Lists refresh every 6 seconds with an ETag, so an unchanged list costs an empty `304`.
 
 ## Design system
 
-Every colour lives in `src/app/globals.css` as a token (`bg-surface`, `text-ink-2`, `bg-brand-600`, `text-danger-ink` …). Tailwind's built-in palette is switched off there, so a raw colour in a component simply produces no CSS. Light/dark and the four accent "flavours" only swap CSS variables. Class recipes shared by all screens are in `src/components/ui.ts`.
+Every colour lives in `src/app/globals.css` as a token (`bg-surface`, `text-ink-2`, `bg-brand-600`, `text-danger-ink` …). Tailwind's built-in palette is switched off there, so a raw colour in a component simply produces no CSS. The palette is brown, gray, red, green, black and white: a white light theme, a charcoal dark theme, and four accents (Brown, Gray, Red, Green). Themes and accents only swap CSS variables. Class recipes shared by all screens are in `src/components/ui.ts`.
 
 The logo is one SVG, `public/brand/icon.svg`. After changing it, regenerate the app icons:
 
@@ -56,5 +57,5 @@ Pushing to `main` deploys. The build runs `vercel-build`: `prisma generate`, `pr
 - `Admin.isActive`, `Admin.sessionVersion`, `Admin.accessTokenHash`: deactivation, ending sessions, private sign-in links.
 - `Order.number`: a short reference (`#12`) people can read aloud.
 - `Order.customerName/Phone`, `OrderItem.productName`: history survives when a customer or product is deleted.
-- `Order.deliveryLat/Lng`, `deliveryPartnerId`, `deliveredAt`, `receivedAt`: delivery pin, assignment, hand-over and the customer's confirmation.
-- `Notification`, `PushSubscription`, `StoreSettings`.
+- `Order.deliveryLat/Lng`, `deliveryPartnerId`, `deliveredAt`, `receivedAt`, `deliveryFee`: delivery pin, assignment, hand-over, the customer's confirmation and the delivery charge.
+- `Notification`, `PushSubscription`, `StoreSettings` (pickup location, delivery charge).

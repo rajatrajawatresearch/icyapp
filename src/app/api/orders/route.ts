@@ -6,6 +6,7 @@ import { UserError, jsonError, parseJson } from "@/lib/api";
 import { resolveCustomer } from "@/lib/customer";
 import { inr } from "@/lib/format";
 import { notifyStore } from "@/lib/notify";
+import { deliveryFeeFor } from "@/lib/pricing";
 
 const CreateOrderSchema = z
   .object({
@@ -87,8 +88,26 @@ export async function POST(req: Request) {
         total = total.add(p.price.mul(qty));
       }
 
+      // The server decides the delivery charge; the checkout only previews it.
+      const settings = await tx.storeSettings.findUnique({ where: { id: 1 } });
+      const deliveryFee = new Prisma.Decimal(
+        deliveryFeeFor(
+          {
+            fee: Number(settings?.deliveryFee ?? 0),
+            freeAbove:
+              settings?.freeDeliveryAbove == null
+                ? null
+                : Number(settings.freeDeliveryAbove),
+          },
+          fulfilmentType,
+          Number(total),
+        ),
+      );
+      total = total.add(deliveryFee);
+
       const created = await tx.order.create({
         data: {
+          deliveryFee,
           customerId: customer.id,
           customerName: customer.name,
           customerPhone: customer.phone,

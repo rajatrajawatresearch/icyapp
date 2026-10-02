@@ -7,6 +7,7 @@ import {
   ACCENT_STORAGE_KEY,
   DEFAULT_ACCENT,
   THEME_STORAGE_KEY,
+  toAccentId,
   type AccentId,
   type ThemeMode,
 } from "@/lib/theme";
@@ -42,7 +43,7 @@ const MODES = [
   { id: "system", label: "Auto", Icon: SunMoon },
 ] as const;
 
-/** Button + popover for light/dark/auto and the accent flavour. Remembered per device. */
+/** Button + popover for light/dark/auto and the accent colour. Remembered per device. */
 export function ThemePicker({ align = "right" }: { align?: "left" | "right" }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ThemeMode>("system");
@@ -52,7 +53,7 @@ export function ThemePicker({ align = "right" }: { align?: "left" | "right" }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync from storage after mount
     setMode(read<ThemeMode>(THEME_STORAGE_KEY, "system"));
-    setAccent(read<AccentId>(ACCENT_STORAGE_KEY, DEFAULT_ACCENT));
+    setAccent(toAccentId(read<string>(ACCENT_STORAGE_KEY, DEFAULT_ACCENT)));
   }, []);
 
   // Follow OS changes while in Auto.
@@ -127,7 +128,7 @@ export function ThemePicker({ align = "right" }: { align?: "left" | "right" }) {
             ))}
           </div>
 
-          <p className="mt-4 mb-2 text-xs font-semibold text-ink-3">Flavour</p>
+          <p className="mt-4 mb-2 text-xs font-semibold text-ink-3">Colour</p>
           <div className="grid grid-cols-4 gap-1">
             {ACCENTS.map((a) => (
               <button

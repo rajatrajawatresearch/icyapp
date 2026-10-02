@@ -44,6 +44,8 @@ export type OrderDTO = {
   deliveryLng: number | null;
   deliveryPartner: { id: string; name: string } | null;
   deliveredAt: string | null;
+  /** Delivery charge included in `total` (0 for pickup or free delivery). */
+  deliveryFee: number;
   /** When the customer confirmed they received the order. */
   receivedAt: string | null;
   scheduledDeleteAt: string | null;
@@ -130,12 +132,14 @@ export function toOrderDTO(
     deliveryLng: o.deliveryLng,
     deliveryPartner: o.deliveryPartner,
     deliveredAt: iso(o.deliveredAt),
+    deliveryFee: Number(o.deliveryFee),
     receivedAt: iso(o.receivedAt),
     scheduledDeleteAt: iso(o.scheduledDeleteAt),
     createdAt: o.createdAt.toISOString(),
     total: o.payment
       ? Number(o.payment.amount)
-      : items.reduce((s, i) => s + i.qty * i.priceAtOrder, 0),
+      : items.reduce((s, i) => s + i.qty * i.priceAtOrder, 0) +
+        Number(o.deliveryFee),
     customer: { id: o.customerId, name: o.customerName, phone: o.customerPhone },
     items,
     payment: o.payment

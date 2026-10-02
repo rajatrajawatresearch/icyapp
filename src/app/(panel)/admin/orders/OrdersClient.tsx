@@ -25,14 +25,17 @@ import { googleDirectionsUrl } from "@/lib/maps";
 import { DeleteButton } from "@/components/DeleteButton";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { ListSkeleton } from "@/components/Skeleton";
+import { OrderLines } from "@/components/OrderLines";
 import { PaymentBadge, StatusBadge } from "@/components/StatusBadge";
 import { useNow } from "@/components/useNow";
 import {
+  btnPrimary,
   btnSecondary,
   btnSuccess,
   card,
   emptyState,
   field,
+  label,
   pageTitle,
   pill,
 } from "@/components/ui";
@@ -237,6 +240,8 @@ function OrderCard({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  /** The delivery-charge editor: null when closed, otherwise the typed amount. */
+  const [feeDraft, setFeeDraft] = useState<string | null>(null);
   const pay = o.payment;
   const closed = o.status === "CANCELLED";
   const upiPending = pay?.method === "UPI" && pay.status === "PENDING" && !closed;
@@ -262,6 +267,29 @@ function OrderCard({
       api<OrderDTO>(`/api/admin/orders/${o.id}/assign`, {
         method: "POST",
         json: { deliveryPartnerId: deliveryPartnerId || null },
+      }),
+    );
+  }
+
+  // A custom charge is possible until the order is paid or closed.
+  const canChangeFee =
+    o.fulfilmentType === "DELIVERY" &&
+    !closed &&
+    o.status !== "COMPLETED" &&
+    pay?.status === "PENDING";
+
+  function saveFee(e: React.FormEvent) {
+    e.preventDefault();
+    const fee = Number(feeDraft);
+    if (feeDraft === null || feeDraft.trim() === "" || !Number.isFinite(fee) || fee < 0) {
+      setError("Enter the delivery charge as a number, 0 or more");
+      return;
+    }
+    setFeeDraft(null);
+    run("fee", () =>
+      api<OrderDTO>(`/api/admin/orders/${o.id}/delivery-fee`, {
+        method: "PATCH",
+        json: { fee },
       }),
     );
   }
@@ -338,22 +366,7 @@ function OrderCard({
         </div>
       </div>
 
-      <ul className="mt-4 space-y-1 text-sm text-ink">
-        {o.items.map((i) => (
-          <li key={i.id} className="flex justify-between gap-2">
-            <span>
-              {i.qty} × {i.productName}
-            </span>
-            <span className="text-ink-2 tabular-nums">
-              {inr(i.qty * i.priceAtOrder)}
-            </span>
-          </li>
-        ))}
-        <li className="flex justify-between border-t border-line pt-2 text-base font-extrabold">
-          <span>Total</span>
-          <span className="tabular-nums">{inr(o.total)}</span>
-        </li>
-      </ul>
+      <OrderLines order={o} />
 
       <div className="mt-3 space-y-1.5 text-sm text-ink-2">
         {o.fulfilmentType === "PICKUP" ? (
@@ -422,6 +435,39 @@ function OrderCard({
         </div>
       )}
 
+      {feeDraft !== null && (
+        <form onSubmit={saveFee} className="mt-3 rounded-xl bg-subtle p-3">
+          <label className={label} htmlFor={`fee-${o.id}`}>
+            Delivery charge for this order (₹)
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              id={`fee-${o.id}`}
+              type="number"
+              min="0"
+              step="1"
+              inputMode="decimal"
+              autoFocus
+              className={`${field} w-32`}
+              value={feeDraft}
+              onChange={(e) => setFeeDraft(e.target.value)}
+            />
+            <button type="submit" className={btnPrimary}>
+              Save charge
+            </button>
+            <button type="button" className={btnSecondary} onClick={() => setFeeDraft(null)}>
+              Keep {o.deliveryFee > 0 ? inr(o.deliveryFee) : "free"}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-ink-3">
+            The total changes and the customer is told.
+            {pay?.method === "UPI" && pay.qrImageUrl
+              ? " The QR you sent is removed, so upload a new one for the new amount."
+              : ""}
+          </p>
+        </form>
+      )}
+
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -462,6 +508,21 @@ function OrderCard({
               </option>
             ))}
           </select>
+        )}
+
+        {canChangeFee && feeDraft === null && (
+          <button
+            type="button"
+            className={btnSecondary}
+            disabled={busy !== null}
+            onClick={() => {
+              setError(null);
+              setFeeDraft(String(o.deliveryFee));
+            }}
+          >
+            <Truck className="h-4 w-4" aria-hidden />
+            {busy === "fee" ? "Saving…" : "Delivery charge"}
+          </button>
         )}
 
         {upiPending && (

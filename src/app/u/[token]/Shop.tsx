@@ -18,6 +18,7 @@ import type { ProductDTO } from "@/lib/dto";
 import { api, errorMessage } from "@/lib/client-api";
 import { inr } from "@/lib/format";
 import type { LatLng } from "@/lib/maps";
+import { deliveryFeeFor, type DeliveryPricing } from "@/lib/pricing";
 import { InstallButton } from "@/components/InstallButton";
 import { LocationPicker } from "@/components/map/LocationPicker";
 import { PickupCard, type Pickup } from "@/components/map/PickupCard";
@@ -34,12 +35,14 @@ export function Shop({
   token,
   customerName,
   pickup,
+  delivery,
   products,
 }: {
   token: string;
   customerName: string;
   products: ProductDTO[];
   pickup: Pickup;
+  delivery: DeliveryPricing;
 }) {
   const router = useRouter();
   const [cart, setCart] = useState<Cart>({});
@@ -108,6 +111,9 @@ export function Shop({
   const itemCount = lines.reduce((s, l) => s + l.qty, 0);
   const total = lines.reduce((s, l) => s + l.qty * l.product.price, 0);
   const needsAddress = fulfilment === "DELIVERY" && address.trim().length < 5;
+  // A preview only: the server works out the charge again when the order is placed.
+  const deliveryFee = deliveryFeeFor(delivery, fulfilment, total);
+  const toPay = total + deliveryFee;
 
   async function placeOrder() {
     setBusy(true);
@@ -401,6 +407,30 @@ export function Shop({
               </div>
             </fieldset>
 
+            <dl className="mt-5 space-y-1.5 rounded-xl bg-subtle p-3 text-sm text-ink">
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-2">Items</dt>
+                <dd className="tabular-nums">{inr(total)}</dd>
+              </div>
+              {fulfilment === "DELIVERY" && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-ink-2">Delivery charge</dt>
+                  <dd className="tabular-nums">
+                    {deliveryFee > 0 ? inr(deliveryFee) : "Free"}
+                  </dd>
+                </div>
+              )}
+              <div className="flex justify-between gap-3 border-t border-line pt-1.5 text-base font-extrabold">
+                <dt>To pay</dt>
+                <dd className="tabular-nums">{inr(toPay)}</dd>
+              </div>
+            </dl>
+            {deliveryFee > 0 && delivery.freeAbove !== null && (
+              <p className="mt-2 text-xs text-ink-3">
+                Add {inr(delivery.freeAbove - total)} more and delivery is free.
+              </p>
+            )}
+
             {error && (
               <p role="alert" className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger-ink">
                 {error}
@@ -414,7 +444,7 @@ export function Shop({
               disabled={busy || lines.length === 0 || needsAddress}
             >
               <span>{busy ? "Placing order…" : "Place order"}</span>
-              <span className="font-extrabold tabular-nums">{inr(total)}</span>
+              <span className="font-extrabold tabular-nums">{inr(toPay)}</span>
             </button>
             {needsAddress && (
               <p className="mt-2 text-center text-xs text-ink-3">

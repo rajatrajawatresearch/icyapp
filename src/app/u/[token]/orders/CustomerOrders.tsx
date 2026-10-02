@@ -7,6 +7,7 @@ import type { OrderDTO } from "@/lib/dto";
 import { FINAL_STATUSES, POLL_INTERVAL_MS } from "@/lib/constants";
 import { api, createPoller, errorMessage } from "@/lib/client-api";
 import { formatDateTime, inr } from "@/lib/format";
+import { OrderLines } from "@/components/OrderLines";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PickupCard, type Pickup } from "@/components/map/PickupCard";
 import { btnPrimary, btnSuccess, card } from "@/components/ui";
@@ -181,22 +182,7 @@ function OrderCard({
         </ol>
       )}
 
-      <ul className="mt-4 space-y-1 text-sm text-ink">
-        {o.items.map((i) => (
-          <li key={i.id} className="flex justify-between gap-2">
-            <span>
-              {i.qty} × {i.productName}
-            </span>
-            <span className="text-ink-2 tabular-nums">
-              {inr(i.qty * i.priceAtOrder)}
-            </span>
-          </li>
-        ))}
-        <li className="flex justify-between border-t border-line pt-2 text-base font-extrabold">
-          <span>Total</span>
-          <span className="tabular-nums">{inr(o.total)}</span>
-        </li>
-      </ul>
+      <OrderLines order={o} />
 
       {o.deliveryPartner && o.status === "OUT_FOR_DELIVERY" && (
         <p className="mt-3 flex items-center gap-2.5 rounded-xl bg-info-soft p-3 text-sm font-semibold text-info-ink">

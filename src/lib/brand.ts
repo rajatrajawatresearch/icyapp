@@ -4,10 +4,10 @@
 export const APP_NAME = "Icy";
 export const APP_TAGLINE = "Orders, payments and deliveries for your store.";
 
-/** Mirrors --brand and --page in globals.css (manifests can't read CSS). */
+/** Mirrors the dark --surface and light --page in globals.css (manifests can't read CSS). */
 export const MANIFEST_COLORS = {
-  theme: "#1273ea",
-  background: "#edf2f8",
+  theme: "#1c1c1e",
+  background: "#f4f4f2",
 } as const;
 
 export const ICONS = {

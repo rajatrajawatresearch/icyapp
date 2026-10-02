@@ -37,7 +37,7 @@
   --color-ink-4: var(--ink-4);
   --color-on-solid: var(--on-solid);
 
-  /* Accent, derived from one colour (the chosen flavour). */
+  /* Accent, derived from one colour (the chosen accent). */
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);
   --color-brand-200: var(--brand-200);
@@ -113,33 +113,34 @@
   }
 }
 
-/* ── Frost (light): cool whites with a deep-water ink, never neutral grey ── */
+/* ── White (light): clean neutral whites with a charcoal ink ── */
 :root {
   color-scheme: light;
-  --page: #edf2f8;
+  --page: #f4f4f2;
   --surface: #ffffff;
   --raised: #ffffff;
-  --subtle: #f3f6fa;
-  --muted: #e4eaf2;
-  --line: #dfe6ef;
-  --line-strong: #c5d0de;
-  --scrim: rgb(5 15 30 / 0.5);
+  --subtle: #f6f6f5;
+  --muted: #ebebe8;
+  --line: #e4e4e1;
+  --line-strong: #cdcdc9;
+  --scrim: rgb(12 12 13 / 0.5);
 
-  --ink: #0a1b33;
-  --ink-2: #3a4a61;
-  --ink-3: #617186;
-  --ink-4: #95a2b4;
+  --ink: #18181a;
+  --ink-2: #45454a;
+  --ink-3: #6e6e75;
+  --ink-4: #a1a1a7;
   --on-solid: #ffffff;
-  /* What tinted text mixes toward: deep navy on light, white on dark. */
-  --tone: #061226;
+  /* What tinted text mixes toward: near-black on light, white on dark. */
+  --tone: #0c0c0d;
 
-  --brand: #1273ea; /* Ice */
-  --success: #0f9f6e; /* pista */
-  --warning: #d98a00; /* mango */
-  --danger: #e0464c;
-  --info: #6a5ae0;
+  /* The whole palette is brown, gray, red, green, black and white. */
+  --brand: #7a4a2b; /* Brown (default accent) */
+  --success: #15803d; /* green */
+  --warning: #a8691a; /* brown-amber */
+  --danger: #c62828; /* red */
+  --info: #5b5b63; /* gray */
 
-  --shadow-rgb: 10 27 51;
+  --shadow-rgb: 20 20 22;
   --elev-xs: 0 1px 2px rgb(var(--shadow-rgb) / 0.07);
   --elev-card:
     0 1px 2px rgb(var(--shadow-rgb) / 0.04),
@@ -149,35 +150,41 @@
     0 28px 56px -18px rgb(var(--shadow-rgb) / 0.3);
 }
 
-/* The four accents are ice-candy flavours. Usable on <html> (the whole app)
-   or on any element (the swatches in the theme picker). */
+/* The four accents. Usable on <html> (the whole app) or on any element
+   (the swatches in the theme picker). */
+[data-accent="brown"] {
+  --brand: #7a4a2b;
+}
+[data-accent="gray"] {
+  --brand: #4a4a50;
+}
+[data-accent="red"] {
+  --brand: #c62828;
+}
 [data-accent="green"] {
-  --brand: #0b966a; /* Pista */
-}
-[data-accent="purple"] {
-  --brand: #6a4be8; /* Kala khatta */
-}
-[data-accent="pink"] {
-  --brand: #dd3f7d; /* Rose */
+  --brand: #15803d;
 }
 
-/* ── Glacier night (dark): navy all the way down, lit from above ── */
+/* ── Charcoal (dark): neutral black-grey, lit from above ── */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #050c17;
-  --surface: #0b1626;
-  --raised: #101f35;
-  --subtle: #0f1c30;
-  --muted: #182a43;
-  --line: #15263c;
-  --line-strong: #263b58;
-  --scrim: rgb(1 5 12 / 0.72);
+  --page: #131314;
+  --surface: #1c1c1e;
+  --raised: #252528;
+  --subtle: #222224;
+  --muted: #2d2d31;
+  --line: #2a2a2d;
+  --line-strong: #3d3d42;
+  --scrim: rgb(0 0 0 / 0.7);
 
-  --ink: #e8f0fb;
-  --ink-2: #a9bbd1;
-  --ink-3: #7a8ea8;
-  --ink-4: #52667f;
+  --ink: #f4f4f5;
+  --ink-2: #c4c4c9;
+  --ink-3: #97979e;
+  --ink-4: #6a6a71;
   --tone: #ffffff;
+
+  --brand: #a9683c;
+  --info: #8e8e96;
 
   --shadow-rgb: 0 0 0;
   --elev-xs: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -185,6 +192,24 @@
     inset 0 1px 0 rgb(255 255 255 / 0.04), 0 14px 34px -18px rgb(0 0 0 / 0.75);
   --elev-pop:
     inset 0 1px 0 rgb(255 255 255 / 0.07), 0 30px 64px -20px rgb(0 0 0 / 0.9);
+}
+
+/* On charcoal each accent is a shade lighter so it still stands out. */
+[data-theme="dark"][data-accent="brown"],
+[data-theme="dark"] [data-accent="brown"] {
+  --brand: #a9683c;
+}
+[data-theme="dark"][data-accent="gray"],
+[data-theme="dark"] [data-accent="gray"] {
+  --brand: #85858e;
+}
+[data-theme="dark"][data-accent="red"],
+[data-theme="dark"] [data-accent="red"] {
+  --brand: #d94343;
+}
+[data-theme="dark"][data-accent="green"],
+[data-theme="dark"] [data-accent="green"] {
+  --brand: #22a055;
 }
 
 /* Derived shades. Declared on :root so they follow whichever --brand,
@@ -200,10 +225,10 @@
   --brand-700: color-mix(in oklab, var(--brand) 78%, var(--tone));
   --brand-800: color-mix(in oklab, var(--brand) 60%, var(--tone));
   --brand-900: color-mix(in oklab, var(--brand) 45%, var(--tone));
-  /* The glacier gradient (login, splash): always deep, in both modes. */
-  --hero-1: color-mix(in oklab, var(--brand) 62%, #ffffff);
-  --hero-2: var(--brand);
-  --hero-3: color-mix(in oklab, var(--brand) 42%, #020b24);
+  /* The hero panel (login, splash): always charcoal, warmed by the accent. */
+  --hero-1: color-mix(in oklab, var(--brand) 60%, #3a3a3f);
+  --hero-2: color-mix(in oklab, var(--brand) 16%, #232326);
+  --hero-3: #0b0b0c;
   --elev-brand: 0 10px 22px -10px
     color-mix(in oklab, var(--brand) 75%, transparent);
 
