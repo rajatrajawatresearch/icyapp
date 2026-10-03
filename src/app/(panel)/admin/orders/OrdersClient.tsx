@@ -258,7 +258,6 @@ function OrderCard({
   /** The value just picked in a dropdown, shown while it is being saved. */
   const [picked, setPicked] = useState<{ status?: string; partner?: string }>({});
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const fileRef = useRef<HTMLInputElement>(null);
   /** The delivery-charge editor: null when closed, otherwise the typed amount. */
   const [feeDraft, setFeeDraft] = useState<string | null>(null);
   const pay = o.payment;
@@ -368,6 +367,20 @@ function OrderCard({
     });
   }
 
+  function sendDetails(upiId: string, note: string) {
+    run(
+      "details",
+      upiId || note
+        ? "Payment details sent to the customer."
+        : "Payment details removed.",
+      () =>
+        api<OrderDTO>(`/api/admin/orders/${o.id}/pay-details`, {
+          method: "POST",
+          json: { upiId, note },
+        }),
+    );
+  }
+
   function markPaid() {
     if (!window.confirm(`Confirm ${inr(o.total)} received for order #${o.number}?`))
       return;
@@ -464,52 +477,13 @@ function OrderCard({
       </div>
 
       {pay?.method === "UPI" && (
-        <div className="mt-3 rounded-xl bg-subtle p-2.5">
-        <div className="flex items-center gap-3">
-          {pay.qrImageUrl ? (
-            <a href={pay.qrImageUrl} target="_blank" rel="noreferrer" className="shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={pay.qrImageUrl}
-                alt="UPI QR"
-                className="h-16 w-16 rounded-lg border border-line bg-on-solid object-contain"
-              />
-            </a>
-          ) : (
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-dashed border-line-strong text-ink-4">
-              <QrCode className="h-6 w-6" aria-hidden />
-            </div>
-          )}
-          <p className="text-sm text-ink-2">
-            {pay.status === "PAID"
-              ? `Paid, confirmed by ${pay.confirmedByName ?? "the store"}.`
-              : pay.proofs.length
-                ? "The customer says they have paid. Check the proof below."
-                : pay.qrImageUrl
-                  ? "QR sent. Waiting for the customer to pay."
-                  : "The customer is waiting for a QR."}
-          </p>
-        </div>
-          {pay.proofs.length > 0 && (
-            <div className="mt-2.5 border-t border-line pt-2.5">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-                <Images className="h-4 w-4 text-ink-3" aria-hidden />
-                Payment proof from the customer ({pay.proofs.length})
-              </p>
-              <ImageThumbs
-                images={pay.proofs}
-                alt="Payment screenshot"
-                className="mt-2"
-              />
-              {upiPending && (
-                <p className="mt-2 text-xs text-ink-3">
-                  Tap a screenshot to open it. If the amount ({inr(o.total)}) has
-                  reached you, press Mark paid.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+        <UpiPanel
+          order={o}
+          pending={upiPending}
+          busy={busy}
+          onUploadQr={uploadQr}
+          onSendDetails={sendDetails}
+        />
       )}
 
       {feeDraft !== null && (
@@ -645,31 +619,6 @@ function OrderCard({
           </button>
         )}
 
-        {upiPending && (
-          <>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) uploadQr(f);
-                e.target.value = "";
-              }}
-            />
-            <button
-              type="button"
-              className={btnSecondary}
-              disabled={busy !== null}
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="h-4 w-4" aria-hidden />
-              {busy === "qr" ? "Uploading…" : pay?.qrImageUrl ? "Replace QR" : "Upload QR"}
-            </button>
-          </>
-        )}
-
         {pay?.status === "PENDING" && !closed && (
           <button
             type="button"
@@ -692,5 +641,209 @@ function OrderCard({
         )}
       </div>
     </li>
+  );
+}
+
+const LAST_DETAILS_KEY = "pay-details-last";
+
+/**
+ * How the store tells the customer where to pay a UPI order: a QR image, a
+ * UPI ID, bank details, or any mix. While the payment is pending the box
+ * itself is the upload button, so there is nothing else to look for.
+ */
+function UpiPanel({
+  order: o,
+  pending,
+  busy,
+  onUploadQr,
+  onSendDetails,
+}: {
+  order: OrderDTO;
+  pending: boolean;
+  busy: string | null;
+  onUploadQr: (file: File) => void;
+  onSendDetails: (upiId: string, note: string) => void;
+}) {
+  const pay = o.payment!;
+  const fileRef = useRef<HTMLInputElement>(null);
+  /** The UPI ID / bank details form: null when closed. */
+  const [draft, setDraft] = useState<{ upiId: string; note: string } | null>(null);
+  const sent = Boolean(pay.qrImageUrl || pay.upiId || pay.payNote);
+
+  const status =
+    pay.status === "PAID"
+      ? `Paid, confirmed by ${pay.confirmedByName ?? "the store"}.`
+      : pay.proofs.length
+        ? "The customer says they have paid. Check the proof below."
+        : sent
+          ? "Payment details sent. Waiting for the customer to pay."
+          : "The customer is waiting for payment details.";
+
+  function openDraft() {
+    let last = { upiId: "", note: "" };
+    try {
+      // The store's UPI ID rarely changes: start from what was sent last time.
+      last = { ...last, ...JSON.parse(localStorage.getItem(LAST_DETAILS_KEY) ?? "{}") };
+    } catch {}
+    setDraft({
+      upiId: pay.upiId ?? (pay.payNote ? "" : last.upiId),
+      note: pay.payNote ?? (pay.upiId ? "" : last.note),
+    });
+  }
+
+  function send(e: React.FormEvent) {
+    e.preventDefault();
+    if (!draft) return;
+    const details = { upiId: draft.upiId.trim(), note: draft.note.trim() };
+    try {
+      if (details.upiId || details.note)
+        localStorage.setItem(LAST_DETAILS_KEY, JSON.stringify(details));
+    } catch {}
+    setDraft(null);
+    onSendDetails(details.upiId, details.note);
+  }
+
+  return (
+    <div className="mt-3 rounded-xl bg-subtle p-2.5">
+      <div className="flex items-center gap-3">
+        {pay.qrImageUrl && (
+          <ImageThumbs images={[{ id: "qr", url: pay.qrImageUrl }]} alt="UPI QR" />
+        )}
+        {pending ? (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onUploadQr(f);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => fileRef.current?.click()}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition hover:bg-muted active:scale-[0.99] disabled:opacity-60"
+            >
+              {!pay.qrImageUrl && (
+                <span className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-dashed border-brand-400 text-brand-700">
+                  <Upload className="h-6 w-6" aria-hidden />
+                </span>
+              )}
+              <span className="min-w-0 py-1">
+                <span className="block text-sm text-ink-2">{status}</span>
+                <span className="mt-0.5 flex items-center gap-1.5 text-sm font-bold text-brand-700">
+                  <QrCode className="h-4 w-4 shrink-0" aria-hidden />
+                  {busy === "qr"
+                    ? "Uploading…"
+                    : pay.qrImageUrl
+                      ? "Tap here to replace the QR"
+                      : "Tap here to upload a QR"}
+                </span>
+              </span>
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-ink-2">{status}</p>
+        )}
+      </div>
+
+      {(pay.upiId || pay.payNote) && draft === null && (
+        <dl className="mt-2.5 space-y-1 border-t border-line pt-2.5 text-sm">
+          {pay.upiId && (
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-ink-3">UPI ID</dt>
+              <dd className="font-semibold break-all text-ink">{pay.upiId}</dd>
+            </div>
+          )}
+          {pay.payNote && (
+            <div>
+              <dt className="text-ink-3">Bank / other details</dt>
+              <dd className="whitespace-pre-line text-ink">{pay.payNote}</dd>
+            </div>
+          )}
+        </dl>
+      )}
+
+      {pending && draft === null && (
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={openDraft}
+          className="mt-2.5 text-sm font-bold text-brand-700 disabled:opacity-60"
+        >
+          {busy === "details"
+            ? "Sending…"
+            : pay.upiId || pay.payNote
+              ? "Change the UPI ID or bank details"
+              : "Or send a UPI ID or bank details"}
+        </button>
+      )}
+
+      {draft !== null && (
+        <form onSubmit={send} className="mt-2.5 space-y-3 border-t border-line pt-2.5">
+          <div>
+            <label className={label} htmlFor={`upi-${o.id}`}>
+              UPI ID
+            </label>
+            <input
+              id={`upi-${o.id}`}
+              className={input}
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="name@bank"
+              value={draft.upiId}
+              onChange={(e) => setDraft({ ...draft, upiId: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className={label} htmlFor={`note-${o.id}`}>
+              Bank or other details (optional)
+            </label>
+            <textarea
+              id={`note-${o.id}`}
+              className={`${input} min-h-24`}
+              maxLength={600}
+              placeholder={"Account name\nAccount number\nIFSC"}
+              value={draft.note}
+              onChange={(e) => setDraft({ ...draft, note: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className={btnPrimary}>
+              Send to the customer
+            </button>
+            <button type="button" className={btnSecondary} onClick={() => setDraft(null)}>
+              Cancel
+            </button>
+          </div>
+          <p className="text-xs text-ink-3">
+            The customer sees these under their order and gets a notification.
+            Clear both boxes and send to take them back.
+          </p>
+        </form>
+      )}
+
+      {pay.proofs.length > 0 && (
+        <div className="mt-2.5 border-t border-line pt-2.5">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <Images className="h-4 w-4 text-ink-3" aria-hidden />
+            Payment proof from the customer ({pay.proofs.length})
+          </p>
+          <ImageThumbs images={pay.proofs} alt="Payment screenshot" className="mt-2" />
+          {pending && (
+            <p className="mt-2 text-xs text-ink-3">
+              Tap a screenshot to open it. If the amount ({inr(o.total)}) has
+              reached you, press Mark paid.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

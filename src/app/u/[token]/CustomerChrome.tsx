@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ReceiptText, Store } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { PushPrompt } from "@/components/PushPrompt";
 import { ThemePicker } from "@/components/ThemePicker";
 
 const RENEW_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
@@ -38,28 +39,31 @@ export function CustomerHeader({
   }, [token]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-surface/85 px-4 py-2.5 backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <Logo />
-          <div className="min-w-0">
-            <h1 className="truncate text-[17px] leading-tight font-extrabold tracking-[-0.02em] text-ink">
-              {title}
-            </h1>
-            {subtitle && <p className="truncate text-xs text-ink-3">{subtitle}</p>}
+    <>
+      <header className="sticky top-0 z-30 border-b border-line bg-surface/85 px-4 py-2.5 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Logo />
+            <div className="min-w-0">
+              <h1 className="truncate text-[17px] leading-tight font-extrabold tracking-[-0.02em] text-ink">
+                {title}
+              </h1>
+              {subtitle && <p className="truncate text-xs text-ink-3">{subtitle}</p>}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <NotificationBell
+              endpoint={`/api/customer/${token}/notifications`}
+              href={`/u/${token}/orders`}
+              pushToken={token}
+            />
+            <ThemePicker />
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <NotificationBell
-            endpoint={`/api/customer/${token}/notifications`}
-            href={`/u/${token}/orders`}
-            pushToken={token}
-          />
-          <ThemePicker />
-        </div>
-      </div>
-      {children}
-    </header>
+        {children}
+      </header>
+      <PushPrompt audience="customer" token={token} className="mx-4 mt-4" />
+    </>
   );
 }
 

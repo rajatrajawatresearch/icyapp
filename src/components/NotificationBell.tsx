@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, BellRing } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Bell, BellRing, X } from "lucide-react";
 import type { NotificationDTO } from "@/lib/notify";
 import { NOTIFICATION_POLL_MS } from "@/lib/constants";
 import { api, createPoller, errorMessage } from "@/lib/client-api";
@@ -13,7 +14,7 @@ import {
   getPushState,
   type PushState,
 } from "@/lib/push-client";
-import { chime } from "@/lib/sound";
+import { chime, unlockSound } from "@/lib/sound";
 import { useNow } from "./useNow";
 import { btnPrimary, iconBtn } from "./ui";
 
@@ -37,6 +38,9 @@ export function NotificationBell({
 }) {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [open, setOpen] = useState(false);
+  /** The notification that just arrived, shown across the top for a few seconds. */
+  const [toast, setToast] = useState<NotificationDTO | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const poll = useMemo(() => createPoller<Feed>(endpoint), [endpoint]);
   const lastUnread = useRef<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -46,8 +50,13 @@ export function NotificationBell({
     try {
       const result = await poll();
       if (!result.changed) return;
-      if (lastUnread.current !== null && result.data.unread > lastUnread.current)
+      // Something new while the app is open: ring, and show it on screen.
+      if (lastUnread.current !== null && result.data.unread > lastUnread.current) {
         chime();
+        setToast(result.data.items[0] ?? null);
+        clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setToast(null), 7000);
+      }
       lastUnread.current = result.data.unread;
       setFeed(result.data);
     } catch {
@@ -61,11 +70,21 @@ export function NotificationBell({
     const tick = () => document.visibilityState === "visible" && load();
     const timer = setInterval(tick, NOTIFICATION_POLL_MS);
     document.addEventListener("visibilitychange", tick);
+    // A push that reaches the phone while the app is open rings the bell at
+    // once (the service worker passes it on) instead of at the next check.
+    const onPush = (e: MessageEvent) => {
+      if ((e.data as { type?: string } | null)?.type === "push") load();
+    };
+    navigator.serviceWorker?.addEventListener("message", onPush);
+    const lockSound = unlockSound();
     // An existing push subscription follows whoever is using this device now.
     getPushState(pushToken).catch(() => {});
     return () => {
       clearInterval(timer);
+      clearTimeout(toastTimer.current);
       document.removeEventListener("visibilitychange", tick);
+      navigator.serviceWorker?.removeEventListener("message", onPush);
+      lockSound();
     };
   }, [load, pushToken]);
 
@@ -86,6 +105,7 @@ export function NotificationBell({
   function toggle() {
     const opening = !open;
     setOpen(opening);
+    setToast(null);
     if (opening && feed?.unread) {
       // Seen: clear the badge now; the dots stay until the list is reloaded.
       lastUnread.current = 0;
@@ -163,6 +183,34 @@ export function NotificationBell({
           <PushToggle token={pushToken} />
         </div>
       )}
+
+      {/* In the page body, not the header: the header's blur would trap a fixed box. */}
+      {toast &&
+        createPortal(
+          <div
+            role="status"
+            className="fixed inset-x-3 top-3 z-60 flex animate-pop items-start gap-3 rounded-2xl border border-brand-200 bg-raised p-3.5 shadow-pop sm:inset-x-auto sm:right-4 sm:w-96"
+          >
+            <BellRing className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" aria-hidden />
+            <Link
+              href={href}
+              onClick={() => setToast(null)}
+              className="min-w-0 flex-1"
+            >
+              <span className="block text-sm font-bold text-ink">{toast.title}</span>
+              <span className="block text-sm text-ink-2">{toast.body}</span>
+            </Link>
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => setToast(null)}
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-ink-3 hover:bg-muted"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -234,10 +282,16 @@ function PushToggle({ token }: { token?: string }) {
           settings, then reopen this panel.
         </p>
       )}
+      {state === "needs-install" && (
+        <p className="text-ink-2">
+          On an iPhone, notifications need the app on your Home Screen: tap
+          Share, then “Add to Home Screen”, and open it from there.
+        </p>
+      )}
       {state === "unsupported" && (
         <p className="text-ink-2">
-          To get alerts with the app closed, install it first (browser menu,
-          then “Add to Home Screen”) and open it from there.
+          This browser can&apos;t show notifications with the app closed. Open
+          the app in Chrome, or install it from the browser menu.
         </p>
       )}
       {error && <p className="mt-2 text-danger-ink">{error}</p>}

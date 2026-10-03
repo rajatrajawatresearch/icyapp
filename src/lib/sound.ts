@@ -1,20 +1,52 @@
-/** Short two-tone chime via WebAudio — no asset to download. */
-export function chime() {
+// The in-app "ting", made with WebAudio — no sound file to download.
+
+let ctx: AudioContext | null = null;
+
+function context() {
   try {
-    const ctx = new AudioContext();
-    [880, 1320].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const at = ctx.currentTime + i * 0.15;
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, at);
-      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.3);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(at);
-      osc.stop(at + 0.3);
-    });
+    ctx ??= new AudioContext();
   } catch {
-    // Browsers block audio until the user has interacted with the page —
-    // the badge still shows.
+    // No audio on this device; the badge and the banner still show.
   }
+  return ctx;
+}
+
+/**
+ * Browsers, iPhones above all, only let a page make sound after the person
+ * has touched it. This wakes the audio on the first tap or key press, so a
+ * notification that arrives later can ring. Returns a cleanup function.
+ */
+export function unlockSound() {
+  const wake = () => {
+    context()
+      ?.resume()
+      .catch(() => {});
+  };
+  window.addEventListener("pointerdown", wake, { passive: true });
+  window.addEventListener("keydown", wake);
+  return () => {
+    window.removeEventListener("pointerdown", wake);
+    window.removeEventListener("keydown", wake);
+  };
+}
+
+/** A bright two-note ting. Silent if the page has never been touched. */
+export function chime() {
+  const audio = context();
+  if (!audio) return;
+  audio.resume().catch(() => {});
+  if (audio.state !== "running") return;
+  [1318.5, 1760].forEach((freq, i) => {
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    const at = audio.currentTime + i * 0.16;
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(0.4, at + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.55);
+    osc.connect(gain).connect(audio.destination);
+    osc.start(at);
+    osc.stop(at + 0.6);
+  });
 }

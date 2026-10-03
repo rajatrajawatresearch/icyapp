@@ -41,15 +41,27 @@ self.addEventListener("push", (event) => {
     // Not JSON — show a generic notification below.
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Bazzzar", {
-      body: data.body || "",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/badge-96.png",
-      tag: data.tag, // one notification per order, updated in place
-      renotify: Boolean(data.tag),
-      vibrate: [120, 60, 120],
-      data: { url: data.url || "/" },
-    }),
+    Promise.all([
+      // The phone's own notification: it rings with the phone's sound.
+      self.registration.showNotification(data.title || "Bazzzar", {
+        body: data.body || "",
+        icon: "/icons/icon-192.png",
+        badge: "/icons/badge-96.png",
+        tag: data.tag, // one notification per order, updated in place
+        renotify: Boolean(data.tag), // ...and it rings again each time
+        silent: false,
+        vibrate: [200, 100, 200],
+        timestamp: Date.now(),
+        data: { url: data.url || "/" },
+      }),
+      // If the app is open, tell it now: its bell rings without waiting for
+      // the next check.
+      self.clients
+        .matchAll({ type: "window", includeUncontrolled: true })
+        .then((windows) =>
+          windows.forEach((w) => w.postMessage({ type: "push" })),
+        ),
+    ]),
   );
 });
 

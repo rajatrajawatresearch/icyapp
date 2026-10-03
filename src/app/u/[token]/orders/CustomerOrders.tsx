@@ -5,8 +5,10 @@ import Link from "next/link";
 import {
   Banknote,
   Bike,
+  Check,
   CircleCheck,
   Clock,
+  Copy,
   ExternalLink,
   QrCode,
   ReceiptText,
@@ -18,8 +20,10 @@ import {
   MAX_PAYMENT_PROOFS,
   POLL_INTERVAL_MS,
 } from "@/lib/constants";
+import { APP_NAME } from "@/lib/brand";
 import {
   api,
+  copyText,
   createPoller,
   errorMessage,
   type WriteGuard,
@@ -322,6 +326,8 @@ function PaymentPanel({
       </p>
     );
   }
+  /** The store has told the customer where to pay, in at least one way. */
+  const sent = Boolean(pay.qrImageUrl || pay.upiId || pay.payNote);
   return (
     <>
       {pay.qrImageUrl ? (
@@ -350,13 +356,55 @@ function PaymentPanel({
             Paying from this phone? Save the QR and choose it in your UPI app.
           </p>
         </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-3 rounded-xl bg-warning-soft p-3 text-sm text-warning-ink">
-          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-warning border-t-transparent" />
-          Waiting for the store to send your UPI QR…
+      ) : null}
+      {(pay.upiId || pay.payNote) && (
+        <div className="mt-3 rounded-2xl border border-brand-200 bg-brand-50 p-4">
+          <p className="text-base font-extrabold text-brand-900">
+            {pay.qrImageUrl ? "Or pay with these details" : `Pay ${inr(pay.amount)}`}
+          </p>
+          {pay.upiId && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-brand-800">UPI ID</p>
+              <div className="mt-1 flex items-center gap-2">
+                <p className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2.5 font-mono text-sm break-all text-ink">
+                  {pay.upiId}
+                </p>
+                <CopyButton text={pay.upiId} what="UPI ID" />
+              </div>
+              {/* Opens the phone's UPI app with the ID and amount filled in. */}
+              <a
+                href={`upi://pay?pa=${encodeURIComponent(pay.upiId)}&pn=${encodeURIComponent(APP_NAME)}&am=${pay.amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Order ${order.number}`)}`}
+                className={`${btnPrimary} mt-2 w-full py-3`}
+              >
+                Pay {inr(pay.amount)} in my UPI app
+              </a>
+              <p className="mt-1.5 text-xs text-brand-800">
+                If your UPI app doesn&apos;t open, copy the UPI ID and pay to it.
+              </p>
+            </div>
+          )}
+          {pay.payNote && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-brand-800">
+                Bank / other details
+              </p>
+              <div className="mt-1 flex items-start gap-2">
+                <p className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2.5 text-sm whitespace-pre-line text-ink">
+                  {pay.payNote}
+                </p>
+                <CopyButton text={pay.payNote} what="details" />
+              </div>
+            </div>
+          )}
         </div>
       )}
-      {(pay.qrImageUrl || pay.proofs.length > 0) && (
+      {!sent && (
+        <div className="mt-3 flex items-center gap-3 rounded-xl bg-warning-soft p-3 text-sm text-warning-ink">
+          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-warning border-t-transparent" />
+          Waiting for the store to send payment details…
+        </div>
+      )}
+      {(sent || pay.proofs.length > 0) && (
         <PaymentProofs
           token={token}
           orderId={order.id}
@@ -366,6 +414,28 @@ function PaymentPanel({
         />
       )}
     </>
+  );
+}
+
+function CopyButton({ text, what }: { text: string; what: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-label={`Copy ${what}`}
+      className={`${btnSecondary} shrink-0 px-3`}
+      onClick={async () => {
+        setCopied(await copyText(text));
+        setTimeout(() => setCopied(false), 1500);
+      }}
+    >
+      {copied ? (
+        <Check className="h-4 w-4 text-success" aria-hidden />
+      ) : (
+        <Copy className="h-4 w-4" aria-hidden />
+      )}
+      {copied ? "Copied" : "Copy"}
+    </button>
   );
 }
 

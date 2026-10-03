@@ -165,6 +165,10 @@ model Payment {
   amount             Decimal        @db.Decimal(10, 2)
   status             PaymentStatus  @default(PENDING)
   qrImageUrl         String?
+  /// Other ways the store can tell the customer where to pay: a UPI ID, and
+  /// bank details or any note. Any mix of QR, UPI ID and note may be sent.
+  upiId              String?
+  payNote            String?
   confirmedByAdminId String?
   confirmedBy        Admin?         @relation(fields: [confirmedByAdminId], references: [id], onDelete: SetNull)
   confirmedAt        DateTime?

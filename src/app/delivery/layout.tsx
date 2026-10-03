@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdminPage } from "@/lib/auth";
+import { PushPrompt } from "@/components/PushPrompt";
 import { Watermark } from "@/components/Watermark";
 import { DeliveryHeader } from "./DeliveryHeader";
 
@@ -20,6 +21,7 @@ export default async function DeliveryLayout({
     <div className="flex min-h-full flex-1 flex-col">
       <DeliveryHeader name={me.name} />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-4">
+        <PushPrompt audience="staff" className="mb-4" />
         {children}
       </main>
       <Watermark text={`${me.name} · ${me.email}`} />

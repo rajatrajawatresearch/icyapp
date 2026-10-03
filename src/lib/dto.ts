@@ -35,6 +35,10 @@ export type PaymentDTO = {
   amount: number;
   status: "PENDING" | "PAID";
   qrImageUrl: string | null;
+  /** A UPI ID the store sent instead of, or with, the QR. */
+  upiId: string | null;
+  /** Bank details or any other payment note from the store. */
+  payNote: string | null;
   confirmedAt: string | null;
   confirmedByName: string | null;
   /** Screenshots the customer sent as proof of a UPI payment, oldest first. */
@@ -162,6 +166,8 @@ export function toOrderDTO(
           amount: Number(o.payment.amount),
           status: o.payment.status,
           qrImageUrl: o.payment.qrImageUrl,
+          upiId: o.payment.upiId,
+          payNote: o.payment.payNote,
           confirmedAt: iso(o.payment.confirmedAt),
           confirmedByName: o.payment.confirmedBy?.name ?? null,
           proofs: o.payment.proofs.map((p) => ({
