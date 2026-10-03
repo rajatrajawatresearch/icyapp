@@ -47,7 +47,7 @@ export async function POST(
     type: "qr_ready",
     orderId: id,
     title: `Pay for order #${order.number}`,
-    body: `Your UPI QR is ready. Scan it to pay ${inr(Number(order.payment.amount))}.`,
+    body: `${inr(Number(order.payment.amount))}. QR sent.`,
   });
   const fresh = await prisma.order.findUniqueOrThrow({
     where: { id },

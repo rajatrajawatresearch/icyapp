@@ -6,6 +6,7 @@ import { api, copyText, errorMessage } from "@/lib/client-api";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { LINK_ORIGIN } from "@/lib/link-origin";
 import { PHONE_ERROR, indianMobileDigits } from "@/lib/phone";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { DeleteButton } from "@/components/DeleteButton";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { useNow } from "@/components/useNow";
@@ -95,9 +96,11 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
 
   async function regenerate(c: CustomerDTO) {
     if (
-      !window.confirm(
-        `Regenerate link for ${c.name}? Their old link will stop working immediately.`,
-      )
+      !(await confirmDialog({
+        title: `New link for ${c.name}?`,
+        body: "Their old link stops working at once.",
+        confirm: "Make new link",
+      }))
     )
       return;
     try {
@@ -114,9 +117,11 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
 
   async function resetDevice(c: CustomerDTO) {
     if (
-      !window.confirm(
-        `Let ${c.name} use their link on a new device? The link stays the same; the next device to open it becomes its only device.`,
-      )
+      !(await confirmDialog({
+        title: `Reset the device for ${c.name}?`,
+        body: "The link stays the same. The next device to open it becomes its only device.",
+        confirm: "Reset device",
+      }))
     )
       return;
     try {

@@ -30,6 +30,7 @@ import {
 } from "@/lib/client-api";
 import { formatDateTime, inr } from "@/lib/format";
 import { compressImage } from "@/lib/image";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { ImageThumbs } from "@/components/ImageThumbs";
 import { OrderLines } from "@/components/OrderLines";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -201,7 +202,13 @@ function OrderCard({
     (o.status === "OUT_FOR_DELIVERY" || o.status === "COMPLETED");
 
   async function confirmReceived() {
-    if (!window.confirm(`Confirm that you have received order #${o.number}?`)) return;
+    if (
+      !(await confirmDialog({
+        title: `Did you receive order #${o.number}?`,
+        confirm: "Yes, received",
+      }))
+    )
+      return;
     setBusy(true);
     setError(null);
     try {
@@ -230,7 +237,7 @@ function OrderCard({
             {isPickup ? "Pickup" : "Delivery"}, {formatDateTime(o.createdAt)}
           </p>
         </div>
-        <StatusBadge status={o.status} />
+        <StatusBadge status={o.status} fulfilment={o.fulfilmentType} />
       </div>
 
       {!cancelled && (

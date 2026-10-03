@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { jsonWithEtag } from "@/lib/api";
-import { listNotifications, markNotificationsRead } from "@/lib/notify";
+import {
+  clearNotifications,
+  listNotifications,
+  markNotificationsRead,
+} from "@/lib/notify";
 
 /** GET /api/notifications — the signed-in staff member's notifications (polled by the bell). */
 export async function GET(req: Request) {
@@ -15,5 +19,13 @@ export async function POST() {
   const auth = await requireAdminApi({ allowDelivery: true });
   if (!auth.ok) return auth.res;
   await markNotificationsRead({ adminId: auth.admin.id });
+  return NextResponse.json({ ok: true });
+}
+
+/** DELETE /api/notifications — clear the list. */
+export async function DELETE() {
+  const auth = await requireAdminApi({ allowDelivery: true });
+  if (!auth.ok) return auth.res;
+  await clearNotifications({ adminId: auth.admin.id });
   return NextResponse.json({ ok: true });
 }

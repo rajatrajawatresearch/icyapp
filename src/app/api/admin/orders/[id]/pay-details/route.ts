@@ -68,7 +68,7 @@ export async function POST(
         type: "pay_details_ready",
         orderId: id,
         title: `Pay for order #${order.number}`,
-        body: `The store sent payment details. Pay ${inr(Number(order.payment.amount))} and upload your screenshot.`,
+        body: `${inr(Number(order.payment.amount))}. Payment details sent.`,
       });
     }
   }

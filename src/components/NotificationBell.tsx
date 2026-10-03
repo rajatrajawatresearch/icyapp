@@ -16,7 +16,7 @@ import {
 } from "@/lib/push-client";
 import { chime, unlockSound } from "@/lib/sound";
 import { useNow } from "./useNow";
-import { btnPrimary, iconBtn } from "./ui";
+import { iconBtn } from "./ui";
 
 type Feed = { unread: number; items: NotificationDTO[] };
 
@@ -114,6 +114,14 @@ export function NotificationBell({
     }
   }
 
+  function clearAll() {
+    if (!feed) return;
+    lastUnread.current = 0;
+    setFeed({ unread: 0, items: [] });
+    // Through the poller, so a check already under way can't bring them back.
+    poll.during(() => api(endpoint, { method: "DELETE" })).catch(() => {});
+  }
+
   const unread = feed?.unread ?? 0;
 
   return (
@@ -143,15 +151,22 @@ export function NotificationBell({
             align === "right" ? "sm:right-0" : "sm:left-0"
           }`}
         >
-          <p className="px-4 pt-4 pb-2 text-base font-bold text-ink">
-            Notifications
-          </p>
+          <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-1.5">
+            <p className="text-sm font-bold text-ink">Notifications</p>
+            {feed !== null && feed.items.length > 0 && (
+              <button
+                type="button"
+                onClick={clearAll}
+                className="text-sm font-semibold text-brand-700"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           {feed === null ? (
-            <p className="px-4 pb-4 text-sm text-ink-3">Loading…</p>
+            <p className="px-4 pb-3 text-sm text-ink-3">Loading…</p>
           ) : feed.items.length === 0 ? (
-            <p className="px-4 pb-5 text-sm text-ink-3">
-              Nothing yet. Order updates will show up here.
-            </p>
+            <p className="px-4 pb-3 text-sm text-ink-3">No notifications.</p>
           ) : (
             <ul className="max-h-[55dvh] divide-y divide-line overflow-y-auto">
               {feed.items.map((n) => (
@@ -159,21 +174,25 @@ export function NotificationBell({
                   <Link
                     href={href}
                     onClick={() => setOpen(false)}
-                    className="flex gap-3 px-4 py-3 hover:bg-subtle"
+                    className="flex items-baseline gap-2 px-4 py-2 hover:bg-subtle"
                   >
                     <span
-                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                      className={`h-1.5 w-1.5 shrink-0 -translate-y-0.5 rounded-full ${
                         n.read ? "bg-transparent" : "bg-brand-600"
                       }`}
                     />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-ink">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-ink">
                         {n.title}
                       </span>
-                      <span className="block text-sm text-ink-2">{n.body}</span>
-                      <span className="mt-0.5 block text-xs text-ink-3">
-                        {timeAgo(n.createdAt, now)}
-                      </span>
+                      {n.body && (
+                        <span className="block truncate text-xs text-ink-3">
+                          {n.body}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-[11px] text-ink-4">
+                      {timeAgo(n.createdAt, now)}
                     </span>
                   </Link>
                 </li>
@@ -197,8 +216,12 @@ export function NotificationBell({
               onClick={() => setToast(null)}
               className="min-w-0 flex-1"
             >
-              <span className="block text-sm font-bold text-ink">{toast.title}</span>
-              <span className="block text-sm text-ink-2">{toast.body}</span>
+              <span className="block truncate text-sm font-bold text-ink">
+                {toast.title}
+              </span>
+              {toast.body && (
+                <span className="block truncate text-xs text-ink-2">{toast.body}</span>
+              )}
             </Link>
             <button
               type="button"
@@ -242,57 +265,41 @@ function PushToggle({ token }: { token?: string }) {
   if (state === null || state === "unavailable") return null;
 
   return (
-    <div className="border-t border-line bg-subtle px-4 py-3 text-sm">
-      {state === "on" && (
+    <div className="border-t border-line bg-subtle px-4 py-2.5 text-sm">
+      {(state === "on" || state === "off") && (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-ink-2">Phone notifications are on for this device.</p>
+          <p className="text-ink-2">
+            Phone alerts {state === "on" ? "on" : "off"}
+          </p>
           <button
             type="button"
             disabled={busy}
             className="shrink-0 font-semibold text-brand-700"
             onClick={() =>
-              run(async () => {
-                await disablePush();
-                return "off";
-              })
+              run(
+                state === "on"
+                  ? async () => {
+                      await disablePush();
+                      return "off";
+                    }
+                  : () => enablePush(token),
+              )
             }
           >
-            Turn off
+            {busy ? "…" : state === "on" ? "Turn off" : "Turn on"}
           </button>
         </div>
       )}
-      {state === "off" && (
-        <>
-          <button
-            type="button"
-            disabled={busy}
-            className={`${btnPrimary} w-full`}
-            onClick={() => run(() => enablePush(token))}
-          >
-            {busy ? "Turning on…" : "Turn on phone notifications"}
-          </button>
-          <p className="mt-2 text-xs text-ink-3">
-            Get alerts on this device even when the app is closed.
-          </p>
-        </>
-      )}
       {state === "blocked" && (
-        <p className="text-ink-2">
-          Notifications are blocked for this site. Allow them in your browser
-          settings, then reopen this panel.
-        </p>
+        <p className="text-ink-2">Alerts are blocked. Allow them in browser settings.</p>
       )}
       {state === "needs-install" && (
         <p className="text-ink-2">
-          On an iPhone, notifications need the app on your Home Screen: tap
-          Share, then “Add to Home Screen”, and open it from there.
+          iPhone: Share, “Add to Home Screen”, then open the app from there.
         </p>
       )}
       {state === "unsupported" && (
-        <p className="text-ink-2">
-          This browser can&apos;t show notifications with the app closed. Open
-          the app in Chrome, or install it from the browser menu.
-        </p>
+        <p className="text-ink-2">This browser can&apos;t show phone alerts.</p>
       )}
       {error && <p className="mt-2 text-danger-ink">{error}</p>}
     </div>

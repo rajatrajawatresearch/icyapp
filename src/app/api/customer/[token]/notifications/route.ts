@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { jsonError, jsonWithEtag } from "@/lib/api";
 import { resolveCustomer } from "@/lib/customer";
-import { listNotifications, markNotificationsRead } from "@/lib/notify";
+import {
+  clearNotifications,
+  listNotifications,
+  markNotificationsRead,
+} from "@/lib/notify";
 
 const INVALID = "This link is invalid or has been revoked";
 
@@ -26,5 +30,16 @@ export async function POST(
   const customer = await resolveCustomer((await params).token);
   if (!customer) return jsonError(INVALID, 404);
   await markNotificationsRead({ customerId: customer.id });
+  return NextResponse.json({ ok: true });
+}
+
+/** DELETE /api/customer/:token/notifications — clear the list. */
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ token: string }> },
+) {
+  const customer = await resolveCustomer((await params).token);
+  if (!customer) return jsonError(INVALID, 404);
+  await clearNotifications({ customerId: customer.id });
   return NextResponse.json({ ok: true });
 }

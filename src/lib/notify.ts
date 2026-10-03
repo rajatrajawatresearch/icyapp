@@ -127,3 +127,8 @@ export async function markNotificationsRead(owner: Owner) {
     data: { readAt: new Date() },
   });
 }
+
+/** "Clear": removes the person's notifications for good. */
+export async function clearNotifications(owner: Owner) {
+  await prisma.notification.deleteMany({ where: owner });
+}

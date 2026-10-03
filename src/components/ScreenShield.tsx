@@ -13,8 +13,10 @@ const isEditable = (t: EventTarget | null) =>
  * way to refuse a screenshot or a screen recording (only a native app can), so
  * this covers the screen in the moments a page can actually detect:
  *
- * - the app is in the background, or its window is not the one in use (this is
- *   what the app switcher shows, and what a recorder sees once you click it);
+ * - the app is in the background (what the app switcher shows), or, on a
+ *   computer, its window is not the one in use (what a recorder sees once you
+ *   click it). On a phone a lost focus only means a file picker, a permission
+ *   question or the keyboard, so it is ignored there;
  * - the keys that start a capture are pressed (Print Screen, and Cmd/Win+Shift,
  *   which every Mac and Windows screenshot shortcut begins with);
  * - printing or "save as PDF" (blocked in CSS), and saving or dragging images.
@@ -43,13 +45,18 @@ export function ScreenShield() {
 
     const onVisibility = () =>
       set("hidden", document.visibilityState !== "visible");
-    const onBlur = () => set("blur", true);
+    // Only a mouse-and-keyboard device has "another window" to click on.
+    const desktop = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const onBlur = () => {
+      if (desktop.matches) set("blur", true);
+    };
     const onFocus = () => set("blur", false);
-    // A tap or key press means the window is in use again, even if the
-    // browser never sent "focus" (some phones don't after a system dialog).
+    // Not every browser sends "focus" when the window is back in use (after
+    // a system dialog, say), so the cover also checks for itself.
     const onUse = () => {
       if (reasons.has("blur") && document.hasFocus()) set("blur", false);
     };
+    const heal = setInterval(onUse, 500);
 
     const onKeyDown = (e: KeyboardEvent) => {
       const combo = e.metaKey || e.ctrlKey;
@@ -92,6 +99,7 @@ export function ScreenShield() {
     document.addEventListener("dragstart", onDragStart);
     return () => {
       clearTimeout(keyTimer);
+      clearInterval(heal);
       delete root.dataset.shield;
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onVisibility);

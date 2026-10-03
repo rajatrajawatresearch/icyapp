@@ -29,10 +29,17 @@ export async function PATCH(
     const order = await prisma.$transaction(async (tx) => {
       const current = await tx.order.findFirst({
         where: { id, scheduledDeleteAt: null },
-        include: { items: true },
+        include: { items: true, payment: true },
       });
       if (!current) throw new UserError("Order not found", 404);
-      if (current.status === status) return current;
+      // PAID is the status a paid order waits in before dispatch, so a paid
+      // order sent back to "confirmed" is stored as PAID, not CONFIRMED.
+      const stored =
+        status === "CONFIRMED" && current.payment?.status === "PAID"
+          ? ("PAID" as const)
+          : status;
+      if (current.status === stored)
+        return { ...current, stored, changed: false };
       if (current.status === "CANCELLED")
         throw new UserError("A cancelled order can't be reopened", 409);
 
@@ -40,7 +47,7 @@ export async function PATCH(
       const { count } = await tx.order.updateMany({
         where: { id, status: current.status },
         data: {
-          status,
+          status: stored,
           // The hand-over time follows the status: stamped when the store
           // completes the order itself (the rider's list and "delivered it"
           // read it), cleared when a completed order is reopened.
@@ -67,42 +74,40 @@ export async function PATCH(
           });
         }
       }
-      return current;
+      return { ...current, stored, changed: true };
     });
 
-    if (order.status !== status) {
+    if (order.changed) {
       await syncLinkExpiry(order.customerId);
       await audit(
         auth.admin.id,
         "changed_order_status",
         id,
-        `order #${order.number}: ${order.status} → ${status}`,
+        `order #${order.number}: ${order.status} → ${order.stored}`,
       );
 
       const pickup = order.fulfilmentType === "PICKUP";
       const forCustomer = {
         CONFIRMED: {
           title: `Order #${order.number} confirmed`,
-          body: "The store is getting your order ready.",
+          body: "",
         },
         OUT_FOR_DELIVERY: pickup
           ? {
               title: `Order #${order.number} is ready for pickup`,
-              body: "Come and collect it from the store.",
+              body: "",
             }
           : {
               title: `Order #${order.number} is on the way`,
-              body: "Your order is out for delivery.",
+              body: "",
             },
         COMPLETED: {
           title: `Order #${order.number} completed`,
-          body: order.receivedAt
-            ? "Thank you for ordering."
-            : "Open your orders and confirm you received it.",
+          body: order.receivedAt ? "" : "Tap to confirm you received it.",
         },
         CANCELLED: {
           title: `Order #${order.number} cancelled`,
-          body: "The store cancelled this order. Contact the store if this is a mistake.",
+          body: "",
         },
       }[status];
       await notifyCustomer(order.customerId, {
@@ -115,7 +120,7 @@ export async function PATCH(
           type: "order_cancelled",
           orderId: id,
           title: `Order #${order.number} cancelled`,
-          body: "Don't deliver this order.",
+          body: "Don't deliver it.",
         });
       }
     }

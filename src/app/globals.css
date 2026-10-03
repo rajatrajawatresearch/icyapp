@@ -134,7 +134,7 @@
   --tone: #0c0c0d;
 
   /* The palette is dark brown, gray, red, green and blue on black and white. */
-  --brand: #3b2416; /* Dark brown (default accent) */
+  --brand: #2c190e; /* Dark brown (default accent) */
   --success: #15803d; /* green */
   --warning: #a8691a; /* brown-amber */
   --danger: #c62828; /* red */
@@ -153,7 +153,7 @@
 /* The five accents. Usable on <html> (the whole app) or on any element
    (the swatches in the theme picker). */
 [data-accent="brown"] {
-  --brand: #3b2416;
+  --brand: #2c190e;
 }
 [data-accent="gray"] {
   --brand: #4a4a50;
@@ -165,7 +165,7 @@
   --brand: #15803d;
 }
 [data-accent="blue"] {
-  --brand: #1e3a8a;
+  --brand: #172554;
 }
 
 /* ── Charcoal (dark): neutral black-grey, lit from above ── */
@@ -186,8 +186,13 @@
   --ink-4: #6a6a71;
   --tone: #ffffff;
 
-  --brand: #7d5034;
+  --brand: #6a4028;
   --info: #8e8e96;
+  /* Accents are dark here too, so text in the accent colour leans further
+     toward white than on the light theme, or links would be hard to read. */
+  --brand-700: color-mix(in oklab, var(--brand) 52%, var(--tone));
+  --brand-800: color-mix(in oklab, var(--brand) 40%, var(--tone));
+  --brand-900: color-mix(in oklab, var(--brand) 28%, var(--tone));
 
   --shadow-rgb: 0 0 0;
   --elev-xs: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -200,7 +205,7 @@
 /* On charcoal each accent is a shade lighter so it still stands out. */
 [data-theme="dark"][data-accent="brown"],
 [data-theme="dark"] [data-accent="brown"] {
-  --brand: #7d5034;
+  --brand: #6a4028;
 }
 [data-theme="dark"][data-accent="gray"],
 [data-theme="dark"] [data-accent="gray"] {
@@ -216,7 +221,7 @@
 }
 [data-theme="dark"][data-accent="blue"],
 [data-theme="dark"] [data-accent="blue"] {
-  --brand: #2f65d9;
+  --brand: #2450b8;
 }
 
 /* Derived shades. Declared on :root so they follow whichever --brand,

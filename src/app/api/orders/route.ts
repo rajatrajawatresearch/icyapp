@@ -151,7 +151,7 @@ export async function POST(req: Request) {
       type: "new_order",
       orderId: order.id,
       title: `New order #${order.number}`,
-      body: `${customer.name}, ${inr(order.total)} by ${paymentMethod === "UPI" ? "UPI" : "cash"}, for ${fulfilmentType === "DELIVERY" ? "delivery" : "pickup"}.`,
+      body: `${customer.name}, ${inr(order.total)}, ${paymentMethod === "UPI" ? "UPI" : "cash"}, ${fulfilmentType === "DELIVERY" ? "delivery" : "pickup"}`,
     });
     return NextResponse.json(
       { id: order.id, number: order.number },

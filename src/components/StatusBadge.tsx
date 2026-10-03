@@ -1,14 +1,20 @@
 import {
-  ORDER_STATUS_LABEL,
   ORDER_STATUS_STYLE,
+  orderStatusLabel,
   type OrderStatusValue,
 } from "@/lib/constants";
 import { pill } from "./ui";
 
-export function StatusBadge({ status }: { status: OrderStatusValue }) {
+export function StatusBadge({
+  status,
+  fulfilment,
+}: {
+  status: OrderStatusValue;
+  fulfilment?: "DELIVERY" | "PICKUP";
+}) {
   return (
     <span className={`${pill} ${ORDER_STATUS_STYLE[status]}`}>
-      {ORDER_STATUS_LABEL[status]}
+      {orderStatusLabel(status, fulfilment)}
     </span>
   );
 }

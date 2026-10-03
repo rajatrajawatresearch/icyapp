@@ -74,15 +74,15 @@ export async function PATCH(
       await notifyCustomer(order.customerId, {
         type: "delivery_charge_changed",
         orderId: id,
-        title: `Order #${order.number}: delivery charge is now ${inr(Number(fee))}`,
-        body: `Your new total is ${total}.${hadQr ? " The store will send a new QR for this amount." : ""}`,
+        title: `Order #${order.number}: new total ${total}`,
+        body: `Delivery charge ${inr(Number(fee))}.${hadQr ? " New QR coming." : ""}`,
       });
       if (order.payment?.method === "CASH") {
         await notifyStaff(order.deliveryPartnerId, {
           type: "delivery_charge_changed",
           orderId: id,
           title: `Order #${order.number}: collect ${total}`,
-          body: "The store changed the delivery charge.",
+          body: "",
         });
       }
     }

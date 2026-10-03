@@ -57,10 +57,20 @@ export const ORDER_STATUS_LABEL: Record<OrderStatusValue, string> = {
   PLACED: "Placed",
   CONFIRMED: "Confirmed",
   PAID: "Paid",
-  OUT_FOR_DELIVERY: "On the way / ready",
+  OUT_FOR_DELIVERY: "Out for delivery / ready",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
 };
+
+/** The label for one order: "on the way" reads differently for a pickup. */
+export function orderStatusLabel(
+  status: OrderStatusValue,
+  fulfilment?: "DELIVERY" | "PICKUP",
+) {
+  if (status === "OUT_FOR_DELIVERY" && fulfilment)
+    return fulfilment === "PICKUP" ? "Ready for pickup" : "Out for delivery";
+  return ORDER_STATUS_LABEL[status];
+}
 
 export const ORDER_STATUS_STYLE: Record<OrderStatusValue, string> = {
   PLACED: "bg-warning-soft text-warning-ink",

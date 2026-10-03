@@ -6,6 +6,7 @@ import type { AdminDTO } from "@/lib/dto";
 import { api, copyText, errorMessage } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/format";
 import { AccessLink } from "@/components/AccessLink";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { ListSkeleton } from "@/components/Skeleton";
 import {
   btnPrimary,
@@ -83,9 +84,12 @@ export function TeamClient({
   async function toggle(a: AdminDTO) {
     if (
       a.isActive &&
-      !window.confirm(
-        `Deactivate ${a.name}? They are signed out and can't sign in until you reactivate them.`,
-      )
+      !(await confirmDialog({
+        title: `Deactivate ${a.name}?`,
+        body: "They are signed out and can't sign in until you reactivate them.",
+        confirm: "Deactivate",
+        danger: true,
+      }))
     )
       return;
     try {

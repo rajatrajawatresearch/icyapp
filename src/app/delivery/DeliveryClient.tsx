@@ -21,6 +21,7 @@ import {
 } from "@/lib/client-api";
 import { inr, timeAgo } from "@/lib/format";
 import { googleDirectionsUrl } from "@/lib/maps";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { ListSkeleton } from "@/components/Skeleton";
 import { OrderLines } from "@/components/OrderLines";
 import { PaymentBadge, StatusBadge } from "@/components/StatusBadge";
@@ -190,17 +191,25 @@ function DeliveryCard({
     }
   }
 
-  function deliver() {
+  async function deliver() {
     if (cashDue) {
-      if (!window.confirm(`Collected ${inr(o.total)} cash from ${o.customer.name}?`))
+      if (
+        !(await confirmDialog({
+          title: `Collected ${inr(o.total)} in cash?`,
+          body: `From ${o.customer.name}, for order #${o.number}.`,
+          confirm: "Yes, collected",
+        }))
+      )
         return;
       return act({ action: "delivered", collectCash: true });
     }
     if (
       upiDue &&
-      !window.confirm(
-        "The store has not confirmed the UPI payment yet. Mark delivered anyway?",
-      )
+      !(await confirmDialog({
+        title: "Payment is not confirmed yet",
+        body: "The store has not confirmed this payment. Mark delivered anyway?",
+        confirm: "Mark delivered",
+      }))
     )
       return;
     act({ action: "delivered", collectCash: false });
@@ -224,7 +233,7 @@ function DeliveryCard({
           </p>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          <StatusBadge status={o.status} />
+          <StatusBadge status={o.status} fulfilment={o.fulfilmentType} />
           {pay && <PaymentBadge method={pay.method} status={pay.status} />}
         </div>
       </div>

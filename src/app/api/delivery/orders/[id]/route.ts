@@ -101,32 +101,30 @@ export async function POST(
           type: "delivery_started",
           orderId: id,
           title: `${me.name} is on the way`,
-          body: `Order #${order.number} is out for delivery.`,
+          body: `Order #${order.number}`,
         });
         await notifyStore({
           type: "delivery_started",
           orderId: id,
-          title: `Order #${order.number} is out for delivery`,
-          body: `${me.name} picked it up.`,
+          title: `Order #${order.number} out for delivery`,
+          body: me.name,
         });
       } else {
         const cash =
           result.cashCollected && order.payment
-            ? ` and collected ${inr(Number(order.payment.amount))} in cash`
+            ? `, ${inr(Number(order.payment.amount))} cash collected`
             : "";
         await notifyCustomer(order.customerId, {
           type: "delivered",
           orderId: id,
           title: `Order #${order.number} delivered`,
-          body: order.receivedAt
-            ? "Thank you for ordering."
-            : "Open your orders and confirm you received it.",
+          body: order.receivedAt ? "" : "Tap to confirm you received it.",
         });
         await notifyStore({
           type: "delivered",
           orderId: id,
           title: `Order #${order.number} delivered`,
-          body: `${me.name} delivered it${cash}.`,
+          body: `${me.name}${cash}`,
         });
       }
     }

@@ -60,8 +60,8 @@ export async function POST(
     await notifyStore({
       type: "payment_proof",
       orderId: id,
-      title: `Payment screenshot for order #${order.number}`,
-      body: `${customer.name} says they paid ${inr(Number(payment.amount))}. Check it and mark the order paid.`,
+      title: `Payment proof, order #${order.number}`,
+      body: `${customer.name}, ${inr(Number(payment.amount))}`,
     });
   }
 

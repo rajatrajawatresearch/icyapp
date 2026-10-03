@@ -61,14 +61,14 @@ export async function POST(
   await notifyStaff(deliveryPartnerId, {
     type: "delivery_assigned",
     orderId: id,
-    title: `New delivery: order #${order.number}`,
+    title: `New delivery #${order.number}`,
     body: `${order.customerName}, ${order.deliveryAddress ?? "address in the order"}`,
   });
   await notifyStaff(order.deliveryPartnerId, {
     type: "delivery_unassigned",
     orderId: id,
-    title: `Order #${order.number} is no longer yours`,
-    body: "The store took this delivery off your list.",
+    title: `Order #${order.number} taken off your list`,
+    body: "",
   });
   const fresh = await prisma.order.findUniqueOrThrow({
     where: { id },

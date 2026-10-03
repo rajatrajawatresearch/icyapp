@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { APP_NAME } from "@/lib/brand";
 import { disablePush } from "@/lib/push-client";
+import { confirmDialog } from "./ConfirmDialog";
 import { btnSecondary, iconBtn } from "./ui";
 
 /**
@@ -21,7 +22,14 @@ export function LogoutButton({
   const router = useRouter();
 
   async function logout() {
-    if (icon && !window.confirm(`Log out of ${APP_NAME} on this device?`)) return;
+    if (
+      icon &&
+      !(await confirmDialog({
+        title: `Log out of ${APP_NAME}?`,
+        confirm: "Log out",
+      }))
+    )
+      return;
     await disablePush();
     await fetch("/api/auth/logout", { method: "POST" });
     router.replace("/admin/login");

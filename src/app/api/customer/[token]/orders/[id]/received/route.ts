@@ -55,10 +55,8 @@ export async function POST(
       const message = {
         type: "received",
         orderId: id,
-        title: `Order #${order.number} received by the customer`,
-        body: paid
-          ? `${customer.name} confirmed they got it.`
-          : `${customer.name} confirmed they got it, but payment is still pending. Please check.`,
+        title: `Order #${order.number} received`,
+        body: paid ? customer.name : `${customer.name}. Payment still pending.`,
       };
       await notifyStore(message);
       await notifyStaff(order.deliveryPartnerId, message);

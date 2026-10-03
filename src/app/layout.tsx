@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { ConfirmHost } from "@/components/ConfirmDialog";
 import { PwaRegister } from "@/components/PwaRegister";
 import { ScreenShield } from "@/components/ScreenShield";
 import { ThemeColorSync } from "@/components/ThemeColorSync";
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <ThemeColorSync />
         <PwaRegister />
+        <ConfirmHost />
         <ScreenShield />
       </body>
     </html>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Link2, RefreshCw } from "lucide-react";
 import { api, copyText, errorMessage } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/format";
+import { confirmDialog } from "./ConfirmDialog";
 import { btnPrimary, btnSecondary, input } from "./ui";
 
 /**
@@ -32,10 +33,17 @@ export function AccessLink({
   const mine = who === "your";
 
   async function refresh() {
-    const warning = mine
-      ? "Make a new sign-in link? Your old link stops working and your other devices are signed out."
-      : `Make a new sign-in link for ${who}? Their old link stops working and they are signed out everywhere.`;
-    if (linkAt && !window.confirm(warning)) return;
+    if (
+      linkAt &&
+      !(await confirmDialog({
+        title: mine ? "Make a new sign-in link?" : `Make a new sign-in link for ${who}?`,
+        body: mine
+          ? "Your old link stops working and your other devices are signed out."
+          : "Their old link stops working and they are signed out everywhere.",
+        confirm: "Make new link",
+      }))
+    )
+      return;
     setBusy(true);
     setError(null);
     try {
@@ -51,7 +59,13 @@ export function AccessLink({
   }
 
   async function turnOff() {
-    if (!window.confirm("Turn this sign-in link off? Signing in with a password still works."))
+    if (
+      !(await confirmDialog({
+        title: "Turn this sign-in link off?",
+        body: "Signing in with a password still works.",
+        confirm: "Turn off",
+      }))
+    )
       return;
     setBusy(true);
     setError(null);

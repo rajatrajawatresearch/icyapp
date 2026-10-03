@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowRight,
   Bike,
   Check,
   CircleCheck,
@@ -17,8 +18,11 @@ import { APP_NAME } from "@/lib/brand";
 import {
   ADMIN_SETTABLE_STATUSES,
   FINAL_STATUSES,
+  ORDER_STATUSES,
   ORDER_STATUS_LABEL,
   POLL_INTERVAL_MS,
+  orderStatusLabel,
+  type OrderStatusValue,
 } from "@/lib/constants";
 import {
   api,
@@ -29,6 +33,7 @@ import {
 import { inr, timeAgo } from "@/lib/format";
 import { compressImage } from "@/lib/image";
 import { googleDirectionsUrl } from "@/lib/maps";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { DeleteButton } from "@/components/DeleteButton";
 import { ImageThumbs } from "@/components/ImageThumbs";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
@@ -49,16 +54,27 @@ import {
   pill,
 } from "@/components/ui";
 
-type Filter = "open" | "upi" | "all";
+type Filter = "open" | "pay" | "all" | OrderStatusValue;
 type Partner = { id: string; name: string };
 type Orders = { items: OrderDTO[]; trash: OrderDTO[] };
 
 const SETTABLE: readonly string[] = ADMIN_SETTABLE_STATUSES;
 
-const isUpiPending = (o: OrderDTO) =>
-  o.payment?.method === "UPI" &&
-  o.payment.status === "PENDING" &&
-  o.status !== "CANCELLED";
+/** Not paid yet, by cash or online: the store still has a payment to confirm. */
+const isPayPending = (o: OrderDTO) =>
+  o.payment?.status === "PENDING" && o.status !== "CANCELLED";
+
+// One row of filters: what needs attention first, then each status.
+const FILTERS: { id: Filter; label: string; match: (o: OrderDTO) => boolean }[] = [
+  { id: "open", label: "Open", match: (o) => !FINAL_STATUSES.includes(o.status) },
+  { id: "pay", label: "Payment to confirm", match: isPayPending },
+  ...ORDER_STATUSES.map((status) => ({
+    id: status,
+    label: ORDER_STATUS_LABEL[status],
+    match: (o: OrderDTO) => o.status === status,
+  })),
+  { id: "all", label: "All", match: () => true },
+];
 
 export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   const [items, setItems] = useState<OrderDTO[] | null>(null);
@@ -133,12 +149,9 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
     acknowledge(updated.id);
   }
 
-  const list = (items ?? []).filter((o) => {
-    if (filter === "open") return !FINAL_STATUSES.includes(o.status);
-    if (filter === "upi") return isUpiPending(o);
-    return true;
-  });
-  const pendingUpi = (items ?? []).filter(isUpiPending).length;
+  const list = (items ?? []).filter(
+    FILTERS.find(({ id }) => id === filter)!.match,
+  );
 
   return (
     <div>
@@ -163,27 +176,25 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
       </div>
 
       <div className="mt-4 inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-muted p-1">
-        {(
-          [
-            ["open", "Open"],
-            ["upi", `UPI to confirm${pendingUpi ? ` (${pendingUpi})` : ""}`],
-            ["all", "All"],
-          ] as const
-        ).map(([key, text]) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={filter === key}
-            onClick={() => setFilter(key)}
-            className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
-              filter === key
-                ? "bg-surface text-ink shadow-xs"
-                : "text-ink-3 hover:text-ink"
-            }`}
-          >
-            {text}
-          </button>
-        ))}
+        {FILTERS.map(({ id, label: text, match }) => {
+          const count = id === "all" ? 0 : (items ?? []).filter(match).length;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id)}
+              className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
+                filter === id
+                  ? "bg-surface text-ink shadow-xs"
+                  : "text-ink-3 hover:text-ink"
+              }`}
+            >
+              {text}
+              {count > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
@@ -192,9 +203,7 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
         <ListSkeleton rows={3} className="h-44" />
       ) : list.length === 0 ? (
         <p className={`${emptyState} mt-5`}>
-          {filter === "all"
-            ? "No orders yet. When a customer orders, it appears here by itself."
-            : "Nothing waiting here right now. New orders appear by themselves."}
+          {filter === "all" ? "No orders yet." : "No orders here."}
         </p>
       ) : (
         <ul className="mt-4 space-y-3">
@@ -328,22 +337,28 @@ function OrderCard({
     );
   }
 
-  function changeStatus(status: string) {
+  async function changeStatus(status: string) {
     if (status === o.status) return;
     if (
       status === "CANCELLED" &&
-      !window.confirm(
-        `Cancel order #${o.number}? This can't be undone. Counted stock goes back.`,
-      )
+      !(await confirmDialog({
+        title: `Cancel order #${o.number}?`,
+        body: "This can't be undone.",
+        confirm: "Cancel order",
+        cancel: "Keep order",
+        danger: true,
+      }))
     )
       return;
     // A completed order leaves the Open list, so an unpaid one is easy to forget.
     if (
       status === "COMPLETED" &&
       pay?.status === "PENDING" &&
-      !window.confirm(
-        `Order #${o.number} is not paid yet (${inr(o.total)} by ${pay.method === "UPI" ? "UPI" : "cash"}). Complete it anyway? You can still mark it paid afterwards.`,
-      )
+      !(await confirmDialog({
+        title: `Order #${o.number} is not paid yet`,
+        body: `${inr(o.total)} is still pending. Complete it anyway?`,
+        confirm: "Complete anyway",
+      }))
     )
       return;
     setPicked({ status });
@@ -381,13 +396,30 @@ function OrderCard({
     );
   }
 
-  function markPaid() {
-    if (!window.confirm(`Confirm ${inr(o.total)} received for order #${o.number}?`))
+  async function markPaid() {
+    if (
+      !(await confirmDialog({
+        title: `Received ${inr(o.total)} for order #${o.number}?`,
+        confirm: "Yes, mark paid",
+      }))
+    )
       return;
     run("paid", "Payment marked as received.", () =>
       api<OrderDTO>(`/api/admin/orders/${o.id}/mark-paid`, { method: "POST" }),
     );
   }
+
+  const next =
+    closed || o.status === "COMPLETED"
+      ? null
+      : o.status === "PLACED"
+        ? { status: "CONFIRMED", label: "Confirm order" }
+        : o.status === "OUT_FOR_DELIVERY"
+          ? { status: "COMPLETED", label: "Mark completed" }
+          : {
+              status: "OUT_FOR_DELIVERY",
+              label: orderStatusLabel("OUT_FOR_DELIVERY", o.fulfilmentType),
+            };
 
   const highlight = isNew
     ? "border-brand-400 ring-2 ring-brand-200"
@@ -422,7 +454,7 @@ function OrderCard({
           <p className="text-xs text-ink-3">{timeAgo(o.createdAt, now)}</p>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          <StatusBadge status={o.status} />
+          <StatusBadge status={o.status} fulfilment={o.fulfilmentType} />
           {pay && <PaymentBadge method={pay.method} status={pay.status} />}
           {upiPending && pay.proofs.length > 0 && (
             <span className={`${pill} bg-warning-soft text-warning-ink`}>
@@ -537,7 +569,7 @@ function OrderCard({
             {/* Placed and Paid are set by the app, not picked: listed only to show where the order is. */}
             {!SETTABLE.includes(o.status) && (
               <option value={o.status} disabled>
-                {ORDER_STATUS_LABEL[o.status]}
+                {orderStatusLabel(o.status, o.fulfilmentType)}
               </option>
             )}
             {ADMIN_SETTABLE_STATUSES.filter(
@@ -545,7 +577,7 @@ function OrderCard({
               (s) => !(s === "CONFIRMED" && o.status === "PAID"),
             ).map((s) => (
               <option key={s} value={s}>
-                {ORDER_STATUS_LABEL[s]}
+                {orderStatusLabel(s, o.fulfilmentType)}
               </option>
             ))}
           </select>
@@ -597,13 +629,25 @@ function OrderCard({
             {saved}
           </>
         ) : closed ? (
-          "This order is cancelled and can't be changed."
+          "Cancelled. It can't be changed."
         ) : (
-          "Changes save by themselves as soon as you pick them. No save button needed."
+          "Saves automatically."
         )}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        {/* The usual next step, one tap. The dropdown above is for anything else. */}
+        {next && (
+          <button
+            type="button"
+            className={btnPrimary}
+            disabled={busy !== null}
+            onClick={() => changeStatus(next.status)}
+          >
+            {busy === "status" ? "Saving…" : next.label}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        )}
         {canChangeFee && feeDraft === null && (
           <button
             type="button"

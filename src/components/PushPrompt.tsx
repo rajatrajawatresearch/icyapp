@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BellOff, BellRing, Share } from "lucide-react";
+import { BellOff, BellRing, X } from "lucide-react";
 import { APP_NAME } from "@/lib/brand";
 import { errorMessage } from "@/lib/client-api";
 import { enablePush, getPushState, type PushState } from "@/lib/push-client";
@@ -66,82 +66,41 @@ export function PushPrompt({
   }
 
   const Icon = state === "blocked" ? BellOff : BellRing;
+  const text =
+    state === "off"
+      ? audience === "staff"
+        ? "Get order alerts on this phone"
+        : "Get order updates on this phone"
+      : state === "needs-install"
+        ? `iPhone: tap Share, “Add to Home Screen”, then open ${APP_NAME} from there for alerts`
+        : `Alerts are blocked for ${APP_NAME}. Allow them in browser settings.`;
   return (
     <div
-      className={`flex items-start gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 ${className}`}
+      className={`flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50 px-3.5 py-2.5 ${className}`}
     >
-      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" aria-hidden />
-      <div className="min-w-0 flex-1">
-        {state === "off" && (
-          <>
-            <p className="text-sm font-bold text-ink">
-              {audience === "staff"
-                ? "Get every order on this phone"
-                : "Get order updates on this phone"}
-            </p>
-            <p className="mt-0.5 text-sm text-ink-2">
-              A notification with sound, even when {APP_NAME} is closed.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className={btnPrimary}
-                onClick={turnOn}
-                disabled={busy}
-              >
-                {busy ? "Turning on…" : "Turn on notifications"}
-              </button>
-              <button
-                type="button"
-                className="text-sm font-semibold text-ink-3"
-                onClick={notNow}
-              >
-                Later
-              </button>
-            </div>
-          </>
-        )}
-        {state === "needs-install" && (
-          <>
-            <p className="text-sm font-bold text-ink">
-              To get notifications on this iPhone, add {APP_NAME} to your Home
-              Screen
-            </p>
-            <p className="mt-1 text-sm text-ink-2">
-              Tap the Share button{" "}
-              <Share className="inline h-4 w-4 align-text-bottom" aria-label="Share" />
-              , choose “Add to Home Screen”, then open {APP_NAME} from its new
-              icon and turn notifications on there.
-            </p>
-            <button
-              type="button"
-              className="mt-2 text-sm font-semibold text-ink-3"
-              onClick={notNow}
-            >
-              Later
-            </button>
-          </>
-        )}
-        {state === "blocked" && (
-          <>
-            <p className="text-sm font-bold text-ink">
-              Notifications are blocked for {APP_NAME} on this device
-            </p>
-            <p className="mt-1 text-sm text-ink-2">
-              Open your browser&apos;s site settings, allow notifications, then
-              reopen the app.
-            </p>
-            <button
-              type="button"
-              className="mt-2 text-sm font-semibold text-ink-3"
-              onClick={notNow}
-            >
-              Later
-            </button>
-          </>
-        )}
-        {error && <p className="mt-2 text-sm text-danger-ink">{error}</p>}
-      </div>
+      <Icon className="h-5 w-5 shrink-0 text-brand-700" aria-hidden />
+      <p className="min-w-0 flex-1 text-sm font-semibold text-ink">
+        {text}
+        {error && <span className="block font-normal text-danger-ink">{error}</span>}
+      </p>
+      {state === "off" && (
+        <button
+          type="button"
+          className={`${btnPrimary} shrink-0 px-3.5 py-2`}
+          onClick={turnOn}
+          disabled={busy}
+        >
+          {busy ? "…" : "Turn on"}
+        </button>
+      )}
+      <button
+        type="button"
+        aria-label="Later"
+        onClick={notNow}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-3 hover:bg-muted"
+      >
+        <X className="h-4 w-4" aria-hidden />
+      </button>
     </div>
   );
 }

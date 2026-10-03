@@ -52,14 +52,14 @@ export async function POST(
     type: "payment_confirmed",
     orderId: id,
     title: "Payment received",
-    body: `${amount} for order #${order.number} is confirmed. Thank you!`,
+    body: `${amount}, order #${order.number}`,
   });
   if (order.status !== "COMPLETED") {
     await notifyStaff(order.deliveryPartnerId, {
       type: "payment_confirmed",
       orderId: id,
       title: `Order #${order.number} is paid`,
-      body: "Nothing to collect. Just hand it over.",
+      body: "Nothing to collect.",
     });
   }
 
