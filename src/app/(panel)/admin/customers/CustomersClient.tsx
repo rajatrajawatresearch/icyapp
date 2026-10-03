@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CustomerDTO } from "@/lib/dto";
 import { api, copyText, errorMessage } from "@/lib/client-api";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { LINK_ORIGIN } from "@/lib/link-origin";
 import { PHONE_ERROR, indianMobileDigits } from "@/lib/phone";
 import { DeleteButton } from "@/components/DeleteButton";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
+import { useNow } from "@/components/useNow";
 import {
   btnPrimary,
   btnSecondary,
@@ -38,6 +39,11 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
   /** Customer whose link was just generated/regenerated — shown prominently. */
   const [fresh, setFresh] = useState<CustomerDTO | null>(null);
   const [query, setQuery] = useState("");
+  const now = useNow(5000);
+  /** The link closed by itself after the customer's order was finished. */
+  const closed = (c: CustomerDTO) =>
+    c.linkClosesAt !== null && new Date(c.linkClosesAt).getTime() <= now;
+  const usable = (c: CustomerDTO) => c.isActive && !closed(c);
 
   const load = useCallback(async () => {
     try {
@@ -125,7 +131,7 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
     try {
       await api(`/api/admin/customers/${c.id}`, {
         method: "PATCH",
-        json: { isActive: !c.isActive },
+        json: { isActive: !usable(c) },
       });
       if (fresh?.id === c.id) setFresh(null);
       await load();
@@ -253,10 +259,23 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
               <div className="min-w-0">
                 <p className="font-medium text-ink">
                   {c.name}{" "}
-                  {!c.isActive && (
+                  {!c.isActive ? (
                     <span className="ml-1 rounded-full bg-danger-soft px-2 py-0.5 text-xs font-medium text-danger-ink">
                       Link revoked
                     </span>
+                  ) : closed(c) ? (
+                    <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-ink-2">
+                      Link closed, order finished
+                    </span>
+                  ) : (
+                    c.linkClosesAt && (
+                      <span
+                        className="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-ink"
+                        suppressHydrationWarning
+                      >
+                        Link closes {formatDateTime(c.linkClosesAt)}
+                      </span>
+                    )
                   )}
                 </p>
                 <p className="text-sm text-ink-2">
@@ -273,7 +292,7 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {c.isActive && (
+                {usable(c) && (
                   <button
                     type="button"
                     className={btnSecondary}
@@ -282,7 +301,7 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
                     {copiedId === c.id ? "Copied!" : "Copy link"}
                   </button>
                 )}
-                {c.deviceBoundAt && (
+                {c.deviceBoundAt && usable(c) && (
                   <button
                     type="button"
                     className={btnSecondary}
@@ -303,7 +322,7 @@ export function CustomersClient({ isSuper }: { isSuper: boolean }) {
                   className={btnSecondary}
                   onClick={() => toggleActive(c)}
                 >
-                  {c.isActive ? "Revoke" : "Restore"}
+                  {usable(c) ? "Revoke" : "Restore"}
                 </button>
                 {isSuper && (
                   <DeleteButton

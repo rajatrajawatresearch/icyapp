@@ -1,9 +1,26 @@
 import type { NextConfig } from "next";
 
+// The app's first address said "icyapp"; it is now "bazzzar". Staff pages on
+// the old address move to the new one. Customer pages (/u/…) are left out:
+// they have their own address and send themselves there (lib/device.ts).
+const OLD_HOST = "icyapp.vercel.app";
+const APP_ORIGIN = "https://bazzzar.vercel.app";
+const STAFF_PATHS = ["/", "/admin/:path*", "/superadmin/:path*", "/delivery/:path*", "/a/:path*"];
+
 const nextConfig: NextConfig = {
   // Lets phones on the same Wi-Fi load the dev server (e.g. http://<LAN-IP>:3210/u/<token>).
   allowedDevOrigins: ["192.168.0.2", "192.168.0.3", "*.local"],
   poweredByHeader: false,
+
+  async redirects() {
+    return STAFF_PATHS.map((source) => ({
+      source,
+      has: [{ type: "host" as const, value: OLD_HOST }],
+      destination: `${APP_ORIGIN}${source === "/" ? "/" : source}`,
+      // Temporary on purpose: browsers cache a permanent redirect for good.
+      permanent: false,
+    }));
+  },
 
   async headers() {
     return [

@@ -31,6 +31,8 @@ export async function POST(
         isActive: true,
         deviceHash: null,
         deviceBoundAt: null,
+        linkExpiresAt: null,
+        linkSince: new Date(),
       },
       include: customerInclude,
     }),

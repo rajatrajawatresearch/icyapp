@@ -19,5 +19,8 @@ export async function GET(
     take: 50,
     include: orderInclude,
   });
-  return jsonWithEtag(req, { orders: orders.map(toOrderDTO) });
+  return jsonWithEtag(req, {
+    orders: orders.map(toOrderDTO),
+    linkClosesAt: customer.linkExpiresAt?.toISOString() ?? null,
+  });
 }

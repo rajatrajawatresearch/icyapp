@@ -49,6 +49,12 @@ model Customer {
   /// works on that device only; null = nobody has opened it yet.
   deviceHash        String?
   deviceBoundAt     DateTime?
+  /// When the link was issued, regenerated or restored. Only orders finished
+  /// after this can close it.
+  linkSince         DateTime           @default(now())
+  /// Set when the customer's last order is finished: from this moment the link
+  /// no longer opens (see lib/link-expiry.ts). Null = stays open.
+  linkExpiresAt     DateTime?
   scheduledDeleteAt DateTime?
   createdAt         DateTime           @default(now())
   orders            Order[]
@@ -204,6 +210,9 @@ model StoreSettings {
   deliveryFee       Decimal  @default(0) @db.Decimal(10, 2)
   /// Delivery is free when the items are worth at least this much (null = never free).
   freeDeliveryAbove Decimal? @db.Decimal(10, 2)
+  /// A customer's link closes this many seconds after their order is finished
+  /// (0 = at once, null = never).
+  linkCloseAfterSec Int?     @default(120)
   updatedAt         DateTime @updatedAt
 }
 

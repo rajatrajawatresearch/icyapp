@@ -1,3 +1,4 @@
+import { DEFAULT_LINK_CLOSE_SEC } from "./constants";
 import { prisma } from "./db";
 import type { DeliveryPricing } from "./pricing";
 
@@ -25,4 +26,13 @@ export async function getDeliveryPricing(): Promise<DeliveryPricing> {
     fee: Number(s?.deliveryFee ?? 0),
     freeAbove: s?.freeDeliveryAbove == null ? null : Number(s.freeDeliveryAbove),
   };
+}
+
+/**
+ * Seconds a customer's link stays open after their order is finished
+ * (0 = closes at once, null = never closes).
+ */
+export async function getLinkCloseAfterSec(): Promise<number | null> {
+  const s = await row();
+  return s ? s.linkCloseAfterSec : DEFAULT_LINK_CLOSE_SEC;
 }

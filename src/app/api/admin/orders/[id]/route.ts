@@ -6,6 +6,7 @@ import { UserError, jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { ADMIN_SETTABLE_STATUSES } from "@/lib/constants";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { syncLinkExpiry } from "@/lib/link-expiry";
 import { notifyCustomer, notifyStaff } from "@/lib/notify";
 
 const UpdateStatusSchema = z.object({
@@ -70,6 +71,7 @@ export async function PATCH(
     });
 
     if (order.status !== status) {
+      await syncLinkExpiry(order.customerId);
       await audit(
         auth.admin.id,
         "changed_order_status",

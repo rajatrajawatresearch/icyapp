@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { jsonError } from "@/lib/api";
 import { resolveCustomer } from "@/lib/customer";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
+import { syncLinkExpiry } from "@/lib/link-expiry";
 import { notifyStaff, notifyStore } from "@/lib/notify";
 
 /**
@@ -50,6 +51,7 @@ export async function POST(
       },
     });
     if (count) {
+      if (completes) await syncLinkExpiry(customer.id);
       const message = {
         type: "received",
         orderId: id,

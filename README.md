@@ -1,4 +1,4 @@
-# Bazar
+# Bazzzar
 
 A mobile-first ordering app for one store and its known customers. Customers order through a private link (`/u/<token>`, no signup), pay by cash or a UPI QR the store uploads, and follow their order live. Store staff run everything from an admin panel; delivery partners get their own screen.
 
@@ -34,6 +34,8 @@ npx next dev -p 3210          # http://localhost:3210
 - **Stock is optional.** `Product.stockQty` is null unless the store ticks "Limit stock" on the product. Null means always available: nothing is counted, decremented or returned.
 - **One device per customer link.** The first device to open a link (with a tap on the welcome screen) becomes its only device: a random secret in an httpOnly cookie, its hash on the customer (`src/lib/device.ts`, `src/lib/customer.ts`). Any other device gets a "link in use on another device" screen, and the customer APIs refuse it too. Staff can "Reset device" (same link, next device claims it) or regenerate the link. A browser exposes no MAC address and a phone's IP changes all day, so neither is used.
 - **Share address.** With `NEXT_PUBLIC_LINK_ORIGIN` set, customer links are copied with that address (a random `.vercel.app` name that says nothing about the app) and `/u/*` opened on any other address is redirected there, so the device cookie lives in one place.
+- **Links close after the order.** A customer's link closes a set time after their orders are all completed and paid (Settings → Store: at once, 30 seconds … 1 hour, or never; 2 minutes by default). `syncLinkExpiry` (`src/lib/link-expiry.ts`) recomputes `Customer.linkExpiresAt` after every order event; a closed link shows "This link doesn't work any more". Nothing is deleted, and Restore or Regenerate reopens it.
+- **Addresses.** Staff use `bazzzar.vercel.app`; staff pages on the old `icyapp.vercel.app` redirect there (`next.config.ts`).
 - **Customer phone numbers** must be Indian mobiles; they are stored as `+91 98765 43210` however they were typed (`src/lib/phone.ts`).
 - **Screen privacy.** A website cannot block screenshots or screen recording; only a native app can. What the app does instead (`src/components/ScreenShield.tsx`, `Watermark.tsx`): covers itself when it is in the background or its window loses focus, when Print Screen or Cmd/Win+Shift is pressed, blocks printing and saving images, and tiles the viewer's name faintly over every screen so a screenshot shows who took it.
 - **Notifications.** Every order event creates a notification for the people who must act on it (store staff, the assigned rider, the customer). They appear under the bell, and as push notifications on devices that opted in (`src/lib/notify.ts`, `src/lib/push.ts`, `public/sw.js`).
@@ -44,7 +46,7 @@ npx next dev -p 3210          # http://localhost:3210
 
 ## Design system
 
-Every colour lives in `src/app/globals.css` as a token (`bg-surface`, `text-ink-2`, `bg-brand-600`, `text-danger-ink` …). Tailwind's built-in palette is switched off there, so a raw colour in a component simply produces no CSS. The palette is brown, gray, red, green, black and white: a white light theme, a charcoal dark theme, and four accents (Brown, Gray, Red, Green). Themes and accents only swap CSS variables. Class recipes shared by all screens are in `src/components/ui.ts`.
+Every colour lives in `src/app/globals.css` as a token (`bg-surface`, `text-ink-2`, `bg-brand-600`, `text-danger-ink` …). Tailwind's built-in palette is switched off there, so a raw colour in a component simply produces no CSS. The palette is dark brown, gray, red, green and blue on black and white: a white light theme, a charcoal dark theme, and five accents (Brown, Gray, Red, Green, Blue). Themes and accents only swap CSS variables. Class recipes shared by all screens are in `src/components/ui.ts`.
 
 The logo is one SVG, `public/brand/icon.svg`. After changing it, regenerate the app icons:
 

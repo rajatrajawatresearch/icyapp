@@ -6,6 +6,7 @@ import { UserError, jsonError, parseJson } from "@/lib/api";
 import { MAX_LINE_QTY } from "@/lib/constants";
 import { resolveCustomer } from "@/lib/customer";
 import { inr } from "@/lib/format";
+import { syncLinkExpiry } from "@/lib/link-expiry";
 import { notifyStore } from "@/lib/notify";
 import { deliveryFeeFor } from "@/lib/pricing";
 
@@ -144,6 +145,8 @@ export async function POST(req: Request) {
       return { ...created, total: Number(total) };
     });
 
+    // A new order keeps the link open, even if it was about to close.
+    await syncLinkExpiry(customer.id);
     await notifyStore({
       type: "new_order",
       orderId: order.id,

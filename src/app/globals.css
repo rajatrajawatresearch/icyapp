@@ -133,8 +133,8 @@
   /* What tinted text mixes toward: near-black on light, white on dark. */
   --tone: #0c0c0d;
 
-  /* The whole palette is brown, gray, red, green, black and white. */
-  --brand: #7a4a2b; /* Brown (default accent) */
+  /* The palette is dark brown, gray, red, green and blue on black and white. */
+  --brand: #4e2f1e; /* Dark brown (default accent) */
   --success: #15803d; /* green */
   --warning: #a8691a; /* brown-amber */
   --danger: #c62828; /* red */
@@ -150,10 +150,10 @@
     0 28px 56px -18px rgb(var(--shadow-rgb) / 0.3);
 }
 
-/* The four accents. Usable on <html> (the whole app) or on any element
+/* The five accents. Usable on <html> (the whole app) or on any element
    (the swatches in the theme picker). */
 [data-accent="brown"] {
-  --brand: #7a4a2b;
+  --brand: #4e2f1e;
 }
 [data-accent="gray"] {
   --brand: #4a4a50;
@@ -163,6 +163,9 @@
 }
 [data-accent="green"] {
   --brand: #15803d;
+}
+[data-accent="blue"] {
+  --brand: #1d4ed8;
 }
 
 /* ── Charcoal (dark): neutral black-grey, lit from above ── */
@@ -183,7 +186,7 @@
   --ink-4: #6a6a71;
   --tone: #ffffff;
 
-  --brand: #a9683c;
+  --brand: #8c5a3a;
   --info: #8e8e96;
 
   --shadow-rgb: 0 0 0;
@@ -197,7 +200,7 @@
 /* On charcoal each accent is a shade lighter so it still stands out. */
 [data-theme="dark"][data-accent="brown"],
 [data-theme="dark"] [data-accent="brown"] {
-  --brand: #a9683c;
+  --brand: #8c5a3a;
 }
 [data-theme="dark"][data-accent="gray"],
 [data-theme="dark"] [data-accent="gray"] {
@@ -210,6 +213,10 @@
 [data-theme="dark"][data-accent="green"],
 [data-theme="dark"] [data-accent="green"] {
   --brand: #22a055;
+}
+[data-theme="dark"][data-accent="blue"],
+[data-theme="dark"] [data-accent="blue"] {
+  --brand: #3f7ff0;
 }
 
 /* Derived shades. Declared on :root so they follow whichever --brand,

@@ -1,7 +1,7 @@
 // The product's name and the few brand values needed where CSS variables
 // can't reach (web manifest, push notifications). Change the name here only.
 
-export const APP_NAME = "Bazar";
+export const APP_NAME = "Bazzzar";
 export const APP_TAGLINE = "Orders, payments and deliveries for your store.";
 
 /** Mirrors the dark --surface and light --page in globals.css (manifests can't read CSS). */

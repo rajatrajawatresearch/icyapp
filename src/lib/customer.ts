@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { Customer } from "@prisma/client";
 import { prisma } from "./db";
 import { readDeviceId } from "./device";
+import { linkClosed } from "./link-expiry";
 import { randomToken, sha256 } from "./token";
 
 /** 16 characters ≈ 93 bits — an unguessable bearer link. */
@@ -10,7 +11,7 @@ export function generateCustomerToken() {
 }
 
 export type CustomerAccess =
-  /** Unknown link, revoked (isActive=false), or the customer is being deleted. */
+  /** Unknown link, revoked, closed after the order was finished, or the customer is being deleted. */
   | { state: "invalid" }
   /** A good link that no device has opened yet. */
   | { state: "unclaimed" }
@@ -26,7 +27,12 @@ export const customerAccess = cache(
   async (token: string): Promise<CustomerAccess> => {
     if (!token || token.length > 64) return { state: "invalid" };
     const customer = await prisma.customer.findUnique({ where: { token } });
-    if (!customer || !customer.isActive || customer.scheduledDeleteAt)
+    if (
+      !customer ||
+      !customer.isActive ||
+      customer.scheduledDeleteAt ||
+      linkClosed(customer)
+    )
       return { state: "invalid" };
     if (!customer.deviceHash) return { state: "unclaimed" };
     const device = await readDeviceId();

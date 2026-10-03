@@ -5,6 +5,7 @@ import { jsonError } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
 import { inr } from "@/lib/format";
+import { syncLinkExpiry } from "@/lib/link-expiry";
 import { notifyCustomer, notifyStaff } from "@/lib/notify";
 
 /** POST /api/admin/orders/:id/mark-paid — manual payment confirmation (cash or UPI). */
@@ -38,6 +39,8 @@ export async function POST(
     await prisma.order.update({ where: { id }, data: { status: "PAID" } });
   }
 
+  // A delivered order that is now paid is finished: its link may start closing.
+  await syncLinkExpiry(order.customerId);
   await audit(
     auth.admin.id,
     "marked_paid",

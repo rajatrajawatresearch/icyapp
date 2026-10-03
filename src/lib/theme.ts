@@ -9,11 +9,12 @@ export const ACCENTS = [
   { id: "gray", label: "Gray" },
   { id: "red", label: "Red" },
   { id: "green", label: "Green" },
+  { id: "blue", label: "Blue" },
 ] as const;
 export type AccentId = (typeof ACCENTS)[number]["id"];
 export const DEFAULT_ACCENT: AccentId = "brown";
 
-/** A stored accent from an older palette (e.g. "blue") falls back to the default. */
+/** A stored accent from an older palette (e.g. "purple") falls back to the default. */
 export function toAccentId(value: string | null | undefined): AccentId {
   return ACCENTS.some((a) => a.id === value) ? (value as AccentId) : DEFAULT_ACCENT;
 }

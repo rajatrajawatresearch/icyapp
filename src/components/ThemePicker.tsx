@@ -140,7 +140,7 @@ export function ThemePicker({ align = "right" }: { align?: "left" | "right" }) {
           </div>
 
           <p className="mt-4 mb-2 text-xs font-semibold text-ink-3">Colour</p>
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-5 gap-1">
             {ACCENTS.map((a) => (
               <button
                 key={a.id}

@@ -6,6 +6,7 @@ import {
   readDeviceId,
   writeDeviceCookie,
 } from "@/lib/device";
+import { linkClosed } from "@/lib/link-expiry";
 import { randomToken, sha256 } from "@/lib/token";
 
 /**
@@ -23,7 +24,12 @@ export async function POST(
     token && token.length <= 64
       ? await prisma.customer.findUnique({ where: { token } })
       : null;
-  if (!customer || !customer.isActive || customer.scheduledDeleteAt)
+  if (
+    !customer ||
+    !customer.isActive ||
+    customer.scheduledDeleteAt ||
+    linkClosed(customer)
+  )
     return jsonError("This link is invalid or has been revoked", 404);
 
   let device = await readDeviceId();

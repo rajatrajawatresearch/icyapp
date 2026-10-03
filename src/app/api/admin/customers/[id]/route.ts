@@ -26,7 +26,10 @@ export async function PATCH(
 
   const customer = await prisma.customer.update({
     where: { id },
-    data: { isActive: body.data.isActive },
+    // Restoring also reopens a link that closed after an order was finished.
+    data: body.data.isActive
+      ? { isActive: true, linkExpiresAt: null, linkSince: new Date() }
+      : { isActive: false },
     include: customerInclude,
   });
   await audit(

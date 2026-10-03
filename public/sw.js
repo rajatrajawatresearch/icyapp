@@ -41,7 +41,7 @@ self.addEventListener("push", (event) => {
     // Not JSON — show a generic notification below.
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Bazar", {
+    self.registration.showNotification(data.title || "Bazzzar", {
       body: data.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/badge-96.png",

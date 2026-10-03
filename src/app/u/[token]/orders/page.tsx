@@ -43,6 +43,7 @@ export default async function CustomerOrdersPage({
     <CustomerOrders
       token={token}
       initialOrders={orders.map(toOrderDTO)}
+      initialClosesAt={customer.linkExpiresAt?.toISOString() ?? null}
       placedNumber={placed ? Number(placed) : null}
       pickup={pickup}
     />

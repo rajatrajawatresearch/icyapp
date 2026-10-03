@@ -6,6 +6,7 @@ import { UserError, jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
 import { inr } from "@/lib/format";
+import { syncLinkExpiry } from "@/lib/link-expiry";
 import { notifyCustomer, notifyStore } from "@/lib/notify";
 
 const ActionSchema = z.discriminatedUnion("action", [
@@ -82,6 +83,7 @@ export async function POST(
     });
 
     if (result.action) {
+      await syncLinkExpiry(result.order.customerId);
       const amount = result.order.payment
         ? ` · ₹${Number(result.order.payment.amount)}`
         : "";

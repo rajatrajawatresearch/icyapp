@@ -23,6 +23,8 @@ export type CustomerDTO = {
   isActive: boolean;
   /** When a device first opened the link and became its only device (null = not opened yet). */
   deviceBoundAt: string | null;
+  /** When the link closes (or closed) because the customer's order was finished; null = stays open. */
+  linkClosesAt: string | null;
   scheduledDeleteAt: string | null;
   createdAt: string;
   orderCount: number;
@@ -107,6 +109,7 @@ export function toCustomerDTO(
     token: c.token,
     isActive: c.isActive,
     deviceBoundAt: c.deviceHash ? iso(c.deviceBoundAt) : null,
+    linkClosesAt: iso(c.linkExpiresAt),
     scheduledDeleteAt: iso(c.scheduledDeleteAt),
     createdAt: c.createdAt.toISOString(),
     orderCount: c._count.orders,

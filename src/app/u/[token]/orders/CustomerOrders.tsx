@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Banknote,
   Bike,
   CircleCheck,
+  Clock,
   ExternalLink,
   QrCode,
   ReceiptText,
@@ -37,36 +38,63 @@ const STEPS = ["PLACED", "CONFIRMED", "OUT_FOR_DELIVERY", "COMPLETED"] as const;
 export function CustomerOrders({
   token,
   initialOrders,
+  initialClosesAt,
   placedNumber,
   pickup,
 }: {
   token: string;
   initialOrders: OrderDTO[];
+  /** When this link stops working because the order is finished (null = it stays open). */
+  initialClosesAt: string | null;
   placedNumber: number | null;
   pickup: Pickup;
 }) {
   const [orders, setOrders] = useState(initialOrders);
+  const [closesAt, setClosesAt] = useState(initialClosesAt);
   const [linkDead, setLinkDead] = useState(false);
   const poll = useMemo(
-    () => createPoller<{ orders: OrderDTO[] }>(`/api/customer/${token}/orders`),
+    () =>
+      createPoller<{ orders: OrderDTO[]; linkClosesAt: string | null }>(
+        `/api/customer/${token}/orders`,
+      ),
     [token],
   );
   const hasLive = orders.some((o) => !FINAL_STATUSES.includes(o.status));
 
-  // Poll only while something is still in progress.
+  const refresh = useCallback(async () => {
+    try {
+      const result = await poll();
+      if (!result.changed) return;
+      setOrders(result.data.orders);
+      setClosesAt(result.data.linkClosesAt);
+    } catch (e) {
+      if ((e as { status?: number }).status === 404) setLinkDead(true);
+    }
+  }, [poll]);
+
+  // Poll while something is in progress. Once everything is finished, look
+  // one more time: that answer says when the link closes.
   useEffect(() => {
-    if (!hasLive || linkDead) return;
-    const t = setInterval(async () => {
-      if (document.visibilityState !== "visible") return;
-      try {
-        const result = await poll();
-        if (result.changed) setOrders(result.data.orders);
-      } catch (e) {
-        if ((e as { status?: number }).status === 404) setLinkDead(true);
-      }
+    if (linkDead) return;
+    if (!hasLive) {
+      const t = setTimeout(refresh, 2500);
+      return () => clearTimeout(t);
+    }
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") refresh();
     }, POLL_INTERVAL_MS);
     return () => clearInterval(t);
-  }, [hasLive, linkDead, poll]);
+  }, [hasLive, linkDead, refresh]);
+
+  // The link closes on the dot, without waiting for the next request to fail.
+  useEffect(() => {
+    if (!closesAt || linkDead) return;
+    const t = setTimeout(
+      () => setLinkDead(true),
+      Math.max(0, new Date(closesAt).getTime() - Date.now()),
+    );
+    return () => clearTimeout(t);
+  }, [closesAt, linkDead]);
 
   function replaceOrder(updated: OrderDTO) {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
@@ -90,10 +118,24 @@ export function CustomerOrders({
             </p>
           </div>
         )}
-      {linkDead && (
+      {linkDead ? (
         <div className="m-4 rounded-2xl border border-danger-line bg-danger-soft p-4 text-sm text-danger-ink">
           This link is no longer active. Ask the store for your new link.
         </div>
+      ) : (
+        closesAt && (
+          <div
+            className="m-4 flex items-start gap-3 rounded-2xl border border-warning-line bg-warning-soft p-4 text-sm text-warning-ink"
+            suppressHydrationWarning
+          >
+            <Clock className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+            <p>
+              <span className="font-bold">Your order is complete.</span> This
+              link closes at {formatDateTime(closesAt)}. To order again, ask
+              the store for a new link.
+            </p>
+          </div>
+        )
       )}
 
       {orders.length === 0 ? (
