@@ -15,9 +15,10 @@ let lastRun = 0;
  * list (they filter on scheduledDeleteAt), so deleting them a few seconds
  * late changes nothing a user can see, and saves three writes per poll.
  */
-export async function purgeExpired() {
+export async function purgeExpired({ force = false } = {}) {
   const now = Date.now();
-  if (now - lastRun < MIN_INTERVAL_MS) return;
+  // `force`: an instant reset must be gone before the request returns.
+  if (!force && now - lastRun < MIN_INTERVAL_MS) return;
   lastRun = now;
 
   const expired = { scheduledDeleteAt: { lte: new Date(now) } };

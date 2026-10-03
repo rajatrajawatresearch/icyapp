@@ -85,6 +85,7 @@ model Admin {
   confirmedPayments Payment[]
   auditLogs         AuditLog[]
   deliveries        Order[]            @relation("DeliveryAssignments")
+  locationPings     LocationPing[]
 }
 
 model Product {
@@ -124,6 +125,8 @@ model Order {
   /// Delivery partner (an Admin with role DELIVERY) assigned by the store.
   deliveryPartnerId String?
   deliveryPartner   Admin?         @relation("DeliveryAssignments", fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
+  /// When the order went out for delivery (or became ready for pickup).
+  dispatchedAt      DateTime?
   deliveredAt       DateTime?
   /// Delivery charge on this order: the store's charge at order time, or a
   /// custom amount an admin set afterwards. Included in the payment amount.
@@ -218,6 +221,21 @@ model StoreSettings {
   /// (0 = at once, null = never).
   linkCloseAfterSec Int?     @default(120)
   updatedAt         DateTime @updatedAt
+}
+
+/// Where a delivery partner's phone was. Their app sends it only while they
+/// have an order out for delivery; rows are kept for a few days.
+model LocationPing {
+  id        Int      @id @default(autoincrement())
+  adminId   String
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  lat       Float
+  lng       Float
+  /// How exact the fix is, in metres.
+  accuracy  Float
+  createdAt DateTime @default(now())
+
+  @@index([adminId, createdAt])
 }
 
 /// In-app notification for exactly one recipient: a staff account or a customer.

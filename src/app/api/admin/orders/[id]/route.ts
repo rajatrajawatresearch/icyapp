@@ -54,6 +54,8 @@ export async function PATCH(
           ...(status === "COMPLETED" && {
             deliveredAt: current.deliveredAt ?? new Date(),
           }),
+          // The delivery clock (tracking, time taken) starts here.
+          ...(status === "OUT_FOR_DELIVERY" && { dispatchedAt: new Date() }),
           ...(current.status === "COMPLETED" &&
             status !== "CANCELLED" && { deliveredAt: null }),
         },

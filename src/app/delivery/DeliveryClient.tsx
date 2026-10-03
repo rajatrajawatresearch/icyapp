@@ -34,6 +34,7 @@ import {
   emptyState,
   pill,
 } from "@/components/ui";
+import { LocationSharing } from "./LocationSharing";
 
 type Data = { active: OrderDTO[]; doneToday: OrderDTO[] };
 
@@ -88,6 +89,10 @@ export function DeliveryClient() {
 
   return (
     <div>
+      {/* The store follows a delivery only while one is actually under way. */}
+      <LocationSharing
+        active={(data?.active ?? []).some((o) => o.status === "OUT_FOR_DELIVERY")}
+      />
       <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {(
           [

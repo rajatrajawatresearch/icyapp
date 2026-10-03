@@ -13,24 +13,37 @@
       <stop offset="0" stop-color="#fff" stop-opacity=".35"/>
       <stop offset=".35" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="top" x1=".15" y1=".1" x2=".85" y2=".9">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#dbe7ee"/>
+    <radialGradient id="halo" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ffd43b" stop-opacity=".38"/>
+      <stop offset="1" stop-color="#ffd43b" stop-opacity="0"/>
+    </radialGradient>
+    <!-- one gradient per facet: lit from the top-left, darkest bottom-right -->
+    <linearGradient id="c1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffee9e"/><stop offset="1" stop-color="#ffc533"/>
     </linearGradient>
-    <linearGradient id="left" x1=".1" y1="0" x2=".8" y2="1">
-      <stop offset="0" stop-color="#f1f6f9"/>
-      <stop offset="1" stop-color="#a9bfcc"/>
+    <linearGradient id="c2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdf0"/><stop offset="1" stop-color="#ffe680"/>
     </linearGradient>
-    <linearGradient id="right" x1=".2" y1="0" x2=".9" y2="1">
-      <stop offset="0" stop-color="#9fb4c1"/>
-      <stop offset="1" stop-color="#4f6370"/>
+    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffdd55"/><stop offset="1" stop-color="#f5b000"/>
     </linearGradient>
-    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".5"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <linearGradient id="c4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#eea300"/>
+    </linearGradient>
+    <linearGradient id="c5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e59a00"/><stop offset="1" stop-color="#b06c00"/>
+    </linearGradient>
+    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd23f"/><stop offset="1" stop-color="#d48a00"/>
+    </linearGradient>
+    <linearGradient id="p2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#ee9f00"/>
+    </linearGradient>
+    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c88100"/><stop offset="1" stop-color="#7f4a00"/>
     </linearGradient>
     <filter id="soft" x="-30%" y="-60%" width="160%" height="220%">
-      <feGaussianBlur stdDeviation="15"/>
+      <feGaussianBlur stdDeviation="14"/>
     </filter>
   </defs>
 
@@ -38,43 +51,35 @@
   <rect width="512" height="512" rx="116" fill="url(#glow)"/>
   <rect x="3" y="3" width="506" height="506" rx="113" fill="none" stroke="url(#rim)" stroke-width="6"/>
 
-  <g transform="translate(256 262) scale(1.08) translate(-256 -262)">
-    <!-- contact shadow under the cube -->
-    <ellipse cx="256" cy="420" rx="126" ry="24" fill="#000" opacity=".6" filter="url(#soft)"/>
+  <!-- contact shadow, then the light the stone throws around itself -->
+  <ellipse cx="256" cy="436" rx="104" ry="18" fill="#000" opacity=".6" filter="url(#soft)"/>
+  <circle cx="256" cy="270" r="210" fill="url(#halo)"/>
 
-    <!-- ice cube: lit from the top-left; corners softened with a matching round stroke -->
-    <g stroke-linejoin="round" stroke-width="18">
-      <path d="M124 186 256 262V410L124 334Z" fill="url(#left)" stroke="url(#left)"/>
-      <path d="M388 186 256 262V410L388 334Z" fill="url(#right)" stroke="url(#right)"/>
-      <path d="M256 110 388 186 256 262 124 186Z" fill="url(#top)" stroke="url(#top)"/>
-    </g>
-
-    <!-- refraction: the far corner glowing through the block -->
-    <path d="M256 262 150 323V231Z" fill="url(#core)" opacity=".55"/>
-    <path d="M256 262 362 323V231Z" fill="#fff" opacity=".14"/>
-    <g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="4" opacity=".4">
-      <path d="M256 262 140 329M256 262 372 329"/>
-    </g>
-
-    <!-- light catching the near edges -->
-    <g fill="none" stroke="#fff" stroke-linecap="round">
-      <path d="M134 191 256 262" stroke-width="8" opacity=".95"/>
-      <path d="M256 262 378 191" stroke-width="7" opacity=".6"/>
-      <path d="M256 272V400" stroke-width="7" opacity=".8"/>
-      <path d="M150 168 256 107 300 132" stroke-width="6" opacity=".9"/>
-    </g>
-
-    <!-- gloss streak on the lit face, frost bubbles in the shaded one -->
-    <path d="M144 220 170 235V300L144 285Z" fill="#fff" opacity=".6"/>
-    <path d="M182 244 192 250V296L182 290Z" fill="#fff" opacity=".35"/>
-    <g fill="#fff">
-      <circle cx="340" cy="290" r="9" opacity=".5"/>
-      <circle cx="314" cy="336" r="5.5" opacity=".42"/>
-      <circle cx="356" cy="328" r="4" opacity=".38"/>
-    </g>
+  <!-- the diamond: five crown facets over three pavilion facets -->
+  <g stroke-linejoin="round" stroke-width="5">
+    <path d="M90 216 172 140 200 216Z" fill="url(#c1)" stroke="url(#c1)"/>
+    <path d="M172 140H256L200 216Z" fill="url(#c2)" stroke="url(#c2)"/>
+    <path d="M256 140 312 216H200Z" fill="url(#c3)" stroke="url(#c3)"/>
+    <path d="M256 140H340L312 216Z" fill="url(#c4)" stroke="url(#c4)"/>
+    <path d="M340 140 422 216H312Z" fill="url(#c5)" stroke="url(#c5)"/>
+    <path d="M90 216H200L256 416Z" fill="url(#p1)" stroke="url(#p1)"/>
+    <path d="M200 216H312L256 416Z" fill="url(#p2)" stroke="url(#p2)"/>
+    <path d="M312 216H422L256 416Z" fill="url(#p3)" stroke="url(#p3)"/>
   </g>
 
+  <!-- facet edges catching the light -->
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M172 140 200 216 256 140 312 216 340 140" stroke-width="3" opacity=".55"/>
+    <path d="M200 216 256 416 312 216" stroke-width="3" opacity=".4"/>
+    <path d="M90 216H422" stroke-width="4" opacity=".7"/>
+    <path d="M94 212 172 140H256" stroke-width="7" opacity=".95"/>
+    <path d="M256 140H340L418 212" stroke-width="5" opacity=".45"/>
+    <path d="M96 222 252 408" stroke-width="5" opacity=".5"/>
+  </g>
+  <!-- a glint on the lit crown facet -->
+  <path d="M186 160 222 160 206 184Z" fill="#fff" opacity=".7"/>
+
   <!-- sparkles -->
-  <path d="M410 86c4.5 24 11 30.500 35 35-24 4.500-30.500 11-35 35-4.500-24-11-30.500-35-35 24-4.500 30.500-11 35-35Z" fill="#fff"/>
-  <path d="M98 372c2.300 12 5.700 15.400 17.700 17.700-12 2.300-15.400 5.700-17.700 17.700-2.300-12-5.700-15.400-17.700-17.700 12-2.300 15.400-5.700 17.700-17.700Z" fill="#fff" opacity=".85"/>
+  <path d="M410 86c4.500 24 11 30.500 35 35-24 4.500-30.500 11-35 35-4.500-24-11-30.500-35-35 24-4.500 30.500-11 35-35Z" fill="#fff"/>
+  <path d="M98 348c2.300 12 5.700 15.400 17.700 17.700-12 2.300-15.400 5.700-17.700 17.700-2.300-12-5.700-15.400-17.700-17.700 12-2.300 15.400-5.700 17.700-17.700Z" fill="#fff" opacity=".85"/>
 </svg>

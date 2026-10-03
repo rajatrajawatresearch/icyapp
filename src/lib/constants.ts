@@ -3,6 +3,9 @@
 export const DELETE_DELAY_MINUTES = [1, 5, 10, 30] as const;
 export const DEFAULT_DELETE_DELAY = 5;
 
+/** Data reset: seconds before the rows are deleted for good (0 = at once, no undo). */
+export const RESET_DELAY_SECONDS = [0, 30, 60, 120, 300, 600, 1800] as const;
+
 export const TRASH_ENTITIES = ["product", "customer", "order"] as const;
 export type TrashEntity = (typeof TRASH_ENTITIES)[number];
 

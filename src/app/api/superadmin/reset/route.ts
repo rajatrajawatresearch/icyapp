@@ -4,9 +4,11 @@ import { prisma } from "@/lib/db";
 import { requireAdminApi } from "@/lib/auth";
 import { jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
-import { DELETE_DELAY_MINUTES, TRASH_ENTITIES } from "@/lib/constants";
+import { RESET_DELAY_SECONDS, TRASH_ENTITIES } from "@/lib/constants";
+import { purgeExpired } from "@/lib/purge";
 
 const UNIT_MS = {
+  seconds: 1_000,
   minutes: 60_000,
   hours: 3_600_000,
   days: 86_400_000,
@@ -18,15 +20,16 @@ const ResetSchema = z.object({
   range: z
     .object({
       amount: z.number().int().min(1).max(100_000),
-      unit: z.enum(["minutes", "hours", "days"]),
+      unit: z.enum(["seconds", "minutes", "hours", "days"]),
     })
     .nullable(),
   dryRun: z.boolean().default(false),
-  delayMinutes: z
+  /** Seconds until the rows are deleted for good; 0 deletes at once. */
+  delaySeconds: z
     .number()
     .int()
     .refine(
-      (m) => (DELETE_DELAY_MINUTES as readonly number[]).includes(m),
+      (s) => (RESET_DELAY_SECONDS as readonly number[]).includes(s),
       "Invalid delay",
     )
     .optional(),
@@ -38,15 +41,16 @@ type Ids = { order: string[]; customer: string[]; product: string[] };
 /**
  * POST /api/superadmin/reset — bulk "reset" of business data created in a
  * time window. Uses the same safety window as single deletes: rows are hidden
- * now and purged when the timer ends, so it can be undone. Admin accounts,
- * settings and the audit log are never touched.
+ * now and purged when the timer ends, so it can be undone, unless the delay
+ * is 0, which deletes at once. Admin accounts, settings and the audit log are
+ * never touched.
  */
 export async function POST(req: Request) {
   const auth = await requireAdminApi({ superOnly: true });
   if (!auth.ok) return auth.res;
   const body = await parseJson(req, ResetSchema);
   if (!body.ok) return body.res;
-  const { entities, range, dryRun, delayMinutes, confirm } = body.data;
+  const { entities, range, dryRun, delaySeconds, confirm } = body.data;
 
   const since = range
     ? new Date(Date.now() - range.amount * UNIT_MS[range.unit])
@@ -77,11 +81,11 @@ export async function POST(req: Request) {
   if (dryRun) return NextResponse.json({ counts });
 
   if (confirm !== "RESET") return jsonError("Type RESET to confirm");
-  if (!delayMinutes) return jsonError("Choose when to delete");
+  if (delaySeconds === undefined) return jsonError("Choose when to delete");
   if (counts.order + counts.customer + counts.product === 0)
     return jsonError("Nothing matches this filter");
 
-  const deleteAt = new Date(Date.now() + delayMinutes * 60_000);
+  const deleteAt = new Date(Date.now() + delaySeconds * 1000);
   const data = { scheduledDeleteAt: deleteAt };
   await prisma.$transaction([
     prisma.order.updateMany({
@@ -98,12 +102,17 @@ export async function POST(req: Request) {
     }),
   ]);
 
+  // "At once" means gone before this answer is sent, not at the next list load.
+  if (delaySeconds === 0) await purgeExpired({ force: true });
+
   const window = range ? `last ${range.amount} ${range.unit}` : "all time";
   await audit(
     auth.admin.id,
-    "scheduled_bulk_reset",
+    delaySeconds === 0 ? "bulk_reset" : "scheduled_bulk_reset",
     "reset",
-    `${counts.order} orders, ${counts.customer} customers, ${counts.product} products · ${window} · deletes in ${delayMinutes} min`,
+    `${counts.order} orders, ${counts.customer} customers, ${counts.product} products · ${window} · ${
+      delaySeconds === 0 ? "deleted at once" : `deletes in ${delaySeconds}s`
+    }`,
   );
   return NextResponse.json({
     counts,

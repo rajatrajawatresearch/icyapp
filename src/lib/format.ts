@@ -24,6 +24,15 @@ export function formatDate(iso: string | Date) {
   });
 }
 
+/** Clock time in the store's zone, e.g. "10:42 am". */
+export function formatTime(iso: string | Date) {
+  return new Date(iso).toLocaleTimeString("en-IN", {
+    timeZone: STORE_TIME_ZONE,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function timeAgo(iso: string, now = Date.now()) {
   const secs = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
   if (secs < 60) return `${secs}s ago`;

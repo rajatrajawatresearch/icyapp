@@ -2,28 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import {
-  DEFAULT_DELETE_DELAY,
-  DELETE_DELAY_MINUTES,
-  type TrashEntity,
-} from "@/lib/constants";
+import { RESET_DELAY_SECONDS, type TrashEntity } from "@/lib/constants";
 import { api, errorMessage } from "@/lib/client-api";
 import { countdown } from "@/lib/format";
 import { useNow } from "@/components/useNow";
 import { btnSecondary, card, field, input, label } from "@/components/ui";
 
-type Unit = "minutes" | "hours" | "days";
+type Unit = "seconds" | "minutes" | "hours" | "days";
 type Range = { amount: number; unit: Unit } | null;
 type Counts = Record<TrashEntity, number>;
 type Ids = Record<TrashEntity, string[]>;
 
 const PRESETS: { label: string; range: Range }[] = [
-  { label: "Last 5 min", range: { amount: 5, unit: "minutes" } },
+  { label: "Last 30 seconds", range: { amount: 30, unit: "seconds" } },
+  { label: "Last 1 minute", range: { amount: 1, unit: "minutes" } },
+  { label: "Last 2 minutes", range: { amount: 2, unit: "minutes" } },
+  { label: "Last 5 minutes", range: { amount: 5, unit: "minutes" } },
+  { label: "Last 10 minutes", range: { amount: 10, unit: "minutes" } },
+  { label: "Last 30 minutes", range: { amount: 30, unit: "minutes" } },
   { label: "Last 1 hour", range: { amount: 1, unit: "hours" } },
+  { label: "Last 6 hours", range: { amount: 6, unit: "hours" } },
   { label: "Last 24 hours", range: { amount: 24, unit: "hours" } },
   { label: "Last 7 days", range: { amount: 7, unit: "days" } },
   { label: "All time", range: null },
 ];
+/** The preset the screen opens on: the last 5 minutes. */
+const DEFAULT_PRESET = 3;
+
+const delayLabel = (sec: number) =>
+  sec === 0
+    ? "Instantly"
+    : sec < 60
+      ? `${sec} seconds`
+      : `${sec / 60} minute${sec === 60 ? "" : "s"}`;
 
 const ENTITIES: { id: TrashEntity; label: string }[] = [
   { id: "order", label: "Orders" },
@@ -33,12 +44,13 @@ const ENTITIES: { id: TrashEntity; label: string }[] = [
 
 export function ResetClient() {
   const [entities, setEntities] = useState<TrashEntity[]>(["order"]);
-  const [preset, setPreset] = useState<number | "custom">(0);
+  const [preset, setPreset] = useState<number | "custom">(DEFAULT_PRESET);
   const [custom, setCustom] = useState<{ amount: string; unit: Unit }>({
     amount: "30",
     unit: "minutes",
   });
-  const [delay, setDelay] = useState<number>(DEFAULT_DELETE_DELAY);
+  /** Seconds until the rows are deleted for good. */
+  const [delay, setDelay] = useState<number>(300);
   const [confirm, setConfirm] = useState("");
   const [counts, setCounts] = useState<Counts | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,7 +102,7 @@ export function ResetClient() {
         counts: Counts;
       }>("/api/superadmin/reset", {
         method: "POST",
-        json: { entities, range, delayMinutes: delay, confirm },
+        json: { entities, range, delaySeconds: delay, confirm },
       });
       setDone({ ids: d.ids, at: d.scheduledDeleteAt, counts: d.counts });
       setConfirm("");
@@ -129,6 +141,12 @@ export function ResetClient() {
 
   return (
     <div className="mt-5 space-y-4">
+      {done && new Date(done.at).getTime() <= now && (
+        <p className="rounded-2xl border border-success-line bg-success-soft p-4 text-sm font-semibold text-success-ink">
+          Deleted: {done.counts.order} orders, {done.counts.customer} customers,{" "}
+          {done.counts.product} products.
+        </p>
+      )}
       {done && new Date(done.at).getTime() > now && (
         <div className="rounded-2xl border border-danger-line bg-danger-soft p-4">
           <p className="font-semibold text-danger-ink">
@@ -179,26 +197,24 @@ export function ResetClient() {
         </div>
 
         <div>
-          <p className={label}>Created in</p>
-          <div className="flex flex-wrap gap-2">
+          <label className={label} htmlFor="reset-range">
+            Created in
+          </label>
+          <select
+            id="reset-range"
+            className={input}
+            value={preset}
+            onChange={(e) =>
+              setPreset(e.target.value === "custom" ? "custom" : Number(e.target.value))
+            }
+          >
             {PRESETS.map((p, i) => (
-              <button
-                key={p.label}
-                type="button"
-                className={chip(preset === i)}
-                onClick={() => setPreset(i)}
-              >
+              <option key={p.label} value={i}>
                 {p.label}
-              </button>
+              </option>
             ))}
-            <button
-              type="button"
-              className={chip(preset === "custom")}
-              onClick={() => setPreset("custom")}
-            >
-              Custom
-            </button>
-          </div>
+            <option value="custom">Custom…</option>
+          </select>
           {preset === "custom" && (
             <div className="mt-2 flex gap-2">
               <span className="self-center text-sm text-ink-2">Last</span>
@@ -219,6 +235,7 @@ export function ResetClient() {
                   setCustom({ ...custom, unit: e.target.value as Unit })
                 }
               >
+                <option value="seconds">seconds</option>
                 <option value="minutes">minutes</option>
                 <option value="hours">hours</option>
                 <option value="days">days</option>
@@ -234,7 +251,9 @@ export function ResetClient() {
               ? "Counting…"
               : total === 0
                 ? "Nothing matches — nothing will be deleted."
-                : `${total} item${total === 1 ? "" : "s"} will be hidden now and deleted after the timer.`}
+                : delay === 0
+                  ? `${total} item${total === 1 ? "" : "s"} will be deleted at once. This can't be undone.`
+                  : `${total} item${total === 1 ? "" : "s"} will be hidden now and deleted after the timer.`}
           {entities.includes("customer") && total > 0 && (
             <span className="block text-xs text-ink-3">
               Customers&apos; links stop working; their past orders are kept
@@ -254,9 +273,9 @@ export function ResetClient() {
               value={delay}
               onChange={(e) => setDelay(Number(e.target.value))}
             >
-              {DELETE_DELAY_MINUTES.map((m) => (
-                <option key={m} value={m}>
-                  {m} min (undo until then)
+              {RESET_DELAY_SECONDS.map((sec) => (
+                <option key={sec} value={sec}>
+                  {delayLabel(sec)}
                 </option>
               ))}
             </select>
@@ -287,7 +306,7 @@ export function ResetClient() {
           className="w-full rounded-xl bg-danger py-3 text-base font-semibold text-on-solid transition hover:bg-danger-strong active:scale-[0.99] disabled:opacity-40"
         >
           {busy
-            ? "Scheduling…"
+            ? "Working…"
             : `Reset ${total || ""} item${total === 1 ? "" : "s"}`}
         </button>
       </section>

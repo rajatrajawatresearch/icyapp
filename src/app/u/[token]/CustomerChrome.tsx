@@ -43,7 +43,7 @@ export function CustomerHeader({
       <header className="sticky top-0 z-30 border-b border-line bg-surface/85 px-4 py-2.5 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <Logo />
+            <Logo refresh />
             <div className="min-w-0">
               <h1 className="truncate text-[17px] leading-tight font-extrabold tracking-[-0.02em] text-ink">
                 {title}

@@ -54,3 +54,57 @@
 .leaflet-container .leaflet-control-attribution a {
   color: var(--brand-700);
 }
+
+/* ---- Live delivery tracking (TrackingMap) ---- */
+
+/* The route so far. CSS wins over the colour Leaflet writes on the path. */
+.mm-route {
+  stroke: var(--brand);
+  stroke-opacity: 0.9;
+  fill: none;
+}
+.mm-route.mm-dim {
+  stroke-opacity: 0.2;
+}
+
+/* Where the partner is now: a name tag sitting on the spot. */
+.mm-rider {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 4px 10px 4px 6px;
+  border: 2px solid var(--on-solid);
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--on-solid);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--elev-pop);
+}
+.mm-rider span {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--on-solid);
+  border-radius: 50%;
+  background: var(--success);
+}
+.mm-rider.mm-dim {
+  opacity: 0.45;
+}
+
+/* A place they stopped, labelled with how long. */
+.mm-stop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 7px;
+  border: 2px solid var(--on-solid);
+  border-radius: 999px;
+  background: var(--warning);
+  color: var(--on-solid);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}

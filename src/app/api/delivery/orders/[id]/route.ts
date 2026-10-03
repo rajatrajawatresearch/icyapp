@@ -46,7 +46,7 @@ export async function POST(
         if (order.status === "OUT_FOR_DELIVERY") return { order, action: null };
         await tx.order.update({
           where: { id },
-          data: { status: "OUT_FOR_DELIVERY" },
+          data: { status: "OUT_FOR_DELIVERY", dispatchedAt: new Date() },
         });
         return { order, action: "delivery_started" as const };
       }

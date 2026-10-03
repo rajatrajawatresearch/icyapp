@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bike,
   ChartLine,
+  MapPinned,
   RotateCcw,
   ScrollText,
   ShieldCheck,
@@ -19,6 +21,10 @@ const SECTIONS = {
     { href: "/superadmin/settings", label: "Store", Icon: Store },
     { href: "/superadmin/settings/team", label: "Team", Icon: ShieldCheck },
     { href: "/superadmin/settings/reset", label: "Data reset", Icon: RotateCcw },
+  ],
+  delivery: [
+    { href: "/admin/riders", label: "Team", Icon: Bike },
+    { href: "/admin/tracking", label: "Live tracking", Icon: MapPinned },
   ],
   reports: [
     { href: "/admin/reports", label: "Reports", Icon: ChartLine },

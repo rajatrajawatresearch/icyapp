@@ -15,9 +15,7 @@ export function DeliveryHeader({ name }: { name: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur-xl">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-2.5">
-        <Link href="/delivery" className="min-w-0">
-          <Brand sub={`${name}, delivery`} />
-        </Link>
+        <Brand sub={`${name}, delivery`} refresh />
         <div className="flex shrink-0 items-center gap-2">
           {/* Room for this only on wider screens; phones get it on the account page. */}
           <div className="hidden sm:block">

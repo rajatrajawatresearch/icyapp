@@ -26,13 +26,13 @@ await png(fullBleed(0.78), 512).toFile("public/icons/maskable-512.png");
 await png(fullBleed(0.9), 180).toFile("public/icons/apple-touch-icon.png");
 await png(svg, 48).toFile("public/icons/favicon-48.png");
 
-// Monochrome badge for Android's notification tray: white cube on transparent.
+// Monochrome badge for Android's notification tray: white diamond on transparent.
 const badge = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
-  <g fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M48 12 80 30v36L48 84 16 66V30Z"/><path d="M16 30 48 48 80 30M48 48v36"/>
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M30 18H66L86 40 48 82 10 40Z"/><path d="M10 40H86M30 18 38 40 48 18 58 40 66 18M38 40 48 82 58 40"/>
   </g></svg>`;
 await png(badge, 96).toFile("public/icons/badge-96.png");
-// The cube without its tile, for the glacier panel on the login screen.
+// The diamond without its tile, for the panel on the login screen.
 const cube = svg.replace(/\s*<rect[^>]*\/>/g, "");
 await writeFile("public/brand/cube.svg", cube);
 

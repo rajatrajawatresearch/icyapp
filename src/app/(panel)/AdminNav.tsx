@@ -34,7 +34,13 @@ const STORE_LINKS: NavLink[] = [
   { href: "/admin/orders", label: "Orders", Icon: ClipboardList },
   { href: "/admin/products", label: "Products", Icon: Package },
   { href: "/admin/customers", label: "Customers", Icon: Users },
-  { href: "/admin/riders", label: "Delivery team", Icon: Bike },
+  // Also holds live tracking of deliveries.
+  {
+    href: "/admin/riders",
+    label: "Delivery team",
+    Icon: Bike,
+    also: ["/admin/tracking"],
+  },
   // For the super admin this section also holds the audit log.
   {
     href: "/admin/reports",
@@ -112,12 +118,12 @@ export function AdminNav({ name, isSuper }: { name: string; isSuper: boolean }) 
         >
           <Menu className="h-6 w-6" aria-hidden />
         </button>
-        <Link href="/admin/orders" className="flex items-center gap-2">
-          <Logo className="h-8 w-8" />
+        <div className="flex items-center gap-2">
+          <Logo className="h-8 w-8" refresh />
           <span className="text-base font-extrabold tracking-[-0.02em] text-ink">
             {APP_NAME}
           </span>
-        </Link>
+        </div>
         {desktop === false ? tools("right") : <span className="w-[8.5rem]" />}
       </header>
 
@@ -138,7 +144,7 @@ export function AdminNav({ name, isSuper }: { name: string; isSuper: boolean }) 
         }`}
       >
         <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-3">
-          <Brand sub={isSuper ? "Super admin" : "Admin"} />
+          <Brand sub={isSuper ? "Super admin" : "Admin"} refresh />
           <button
             type="button"
             aria-label="Close menu"
