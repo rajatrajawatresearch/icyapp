@@ -1,4 +1,4 @@
-# Icy
+# Bazar
 
 A mobile-first ordering app for one store and its known customers. Customers order through a private link (`/u/<token>`, no signup), pay by cash or a UPI QR the store uploads, and follow their order live. Store staff run everything from an admin panel; delivery partners get their own screen.
 
