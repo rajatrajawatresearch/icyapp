@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Moon, Palette, Sun, SunMoon } from "lucide-react";
+import { Check, Moon, Sun, SunMoon } from "lucide-react";
 import {
   ACCENTS,
   ACCENT_STORAGE_KEY,
@@ -100,7 +100,18 @@ export function ThemePicker({ align = "right" }: { align?: "left" | "right" }) {
         onClick={() => setOpen((o) => !o)}
         className={iconBtn}
       >
-        <Palette className="h-[18px] w-[18px]" aria-hidden />
+        {/* The half-filled circle: the app's original theme mark. */}
+        <svg
+          viewBox="0 0 24 24"
+          className="h-[18px] w-[18px]"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" />
+        </svg>
       </button>
       {open && (
         <div

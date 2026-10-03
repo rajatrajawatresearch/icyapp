@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
+import { ScreenShield } from "@/components/ScreenShield";
 import { ThemeColorSync } from "@/components/ThemeColorSync";
 import { APP_NAME, APP_TAGLINE, ICONS } from "@/lib/brand";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <ThemeColorSync />
         <PwaRegister />
+        <ScreenShield />
       </body>
     </html>
   );

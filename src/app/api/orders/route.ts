@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { UserError, jsonError, parseJson } from "@/lib/api";
+import { MAX_LINE_QTY } from "@/lib/constants";
 import { resolveCustomer } from "@/lib/customer";
 import { inr } from "@/lib/format";
 import { notifyStore } from "@/lib/notify";
@@ -15,7 +16,7 @@ const CreateOrderSchema = z
       .array(
         z.object({
           productId: z.string().min(1),
-          qty: z.number().int().min(1).max(999),
+          qty: z.number().int().min(1).max(MAX_LINE_QTY),
         }),
       )
       .min(1, "Your cart is empty")
@@ -74,16 +75,23 @@ export async function POST(req: Request) {
       let total = new Prisma.Decimal(0);
       for (const p of products) {
         const qty = qtyByProduct.get(p.id)!;
-        // Conditional decrement: never oversell even with concurrent orders.
-        const { count } = await tx.product.updateMany({
-          where: { id: p.id, stockQty: { gte: qty } },
-          data: { stockQty: { decrement: qty } },
-        });
-        if (count === 0) {
-          throw new UserError(
-            `Only ${p.stockQty} left of "${p.name}". Please reduce the quantity.`,
-            409,
-          );
+        if (qty > MAX_LINE_QTY)
+          throw new UserError(`Please order at most ${MAX_LINE_QTY} of "${p.name}".`);
+        // Stock is only counted for products the store tracks (stockQty set).
+        if (p.stockQty !== null) {
+          // Conditional decrement: never oversell even with concurrent orders.
+          const { count } = await tx.product.updateMany({
+            where: { id: p.id, stockQty: { gte: qty } },
+            data: { stockQty: { decrement: qty } },
+          });
+          if (count === 0) {
+            throw new UserError(
+              p.stockQty === 0
+                ? `"${p.name}" is sold out. Please remove it from your cart.`
+                : `Only ${p.stockQty} left of "${p.name}". Please reduce the quantity.`,
+              409,
+            );
+          }
         }
         total = total.add(p.price.mul(qty));
       }

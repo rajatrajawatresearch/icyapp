@@ -8,6 +8,12 @@ export type TrashEntity = (typeof TRASH_ENTITIES)[number];
 
 export const POLL_INTERVAL_MS = 6000;
 
+/** Most units of one product in a single order (also the cap when stock isn't tracked). */
+export const MAX_LINE_QTY = 999;
+
+/** Payment screenshots a customer can attach to one order. */
+export const MAX_PAYMENT_PROOFS = 6;
+
 export const ORDER_STATUSES = [
   "PLACED",
   "CONFIRMED",

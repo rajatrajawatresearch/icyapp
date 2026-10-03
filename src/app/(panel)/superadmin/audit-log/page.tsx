@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireAdminPage } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
+import { SectionTabs } from "@/components/SectionTabs";
 import { card, pageTitle } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Audit log" };
@@ -27,6 +28,7 @@ export default async function AuditLogPage() {
 
   return (
     <div>
+      <SectionTabs section="reports" />
       <h1 className={pageTitle}>Audit log</h1>
       <p className="text-sm text-ink-3">
         The last {PAGE_SIZE} actions, newest first.

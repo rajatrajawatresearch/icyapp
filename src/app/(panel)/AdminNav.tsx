@@ -2,18 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Bike,
   ChartLine,
   ClipboardList,
-  LogOut,
   Menu,
   Package,
-  RotateCcw,
-  ScrollText,
   Settings,
-  ShieldCheck,
   UserRound,
   Users,
   X,
@@ -21,25 +17,35 @@ import {
 } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Brand, Logo } from "@/components/Logo";
+import { LogoutButton } from "@/components/LogoutButton";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemePicker } from "@/components/ThemePicker";
 import { APP_NAME } from "@/lib/brand";
-import { disablePush } from "@/lib/push-client";
 
-type NavLink = { href: string; label: string; Icon: LucideIcon };
+type NavLink = {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  /** Other pages of the same section (reached by its tabs) that keep this item lit. */
+  also?: string[];
+};
 
 const STORE_LINKS: NavLink[] = [
   { href: "/admin/orders", label: "Orders", Icon: ClipboardList },
   { href: "/admin/products", label: "Products", Icon: Package },
   { href: "/admin/customers", label: "Customers", Icon: Users },
   { href: "/admin/riders", label: "Delivery team", Icon: Bike },
-  { href: "/admin/reports", label: "Reports", Icon: ChartLine },
+  // For the super admin this section also holds the audit log.
+  {
+    href: "/admin/reports",
+    label: "Reports",
+    Icon: ChartLine,
+    also: ["/superadmin/audit-log"],
+  },
 ];
+// Settings holds the store's details, the team and the data reset.
 const OWNER_LINKS: NavLink[] = [
-  { href: "/superadmin/admins", label: "Team", Icon: ShieldCheck },
-  { href: "/superadmin/audit-log", label: "Audit log", Icon: ScrollText },
   { href: "/superadmin/settings", label: "Settings", Icon: Settings },
-  { href: "/superadmin/reset", label: "Data reset", Icon: RotateCcw },
 ];
 
 /** True from 768px up; null until measured on the client. */
@@ -58,27 +64,21 @@ function useIsDesktop() {
 /** Admin navigation: a fixed sidebar on desktop, a slide-in drawer on phones. */
 export function AdminNav({ name, isSuper }: { name: string; isSuper: boolean }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const desktop = useIsDesktop();
 
-  async function logout() {
-    await disablePush(); // this device should stop getting the store's alerts
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/admin/login");
-    router.refresh();
-  }
-
-  // One live instance only (it polls): in the sidebar on desktop, in the top bar on phones.
+  // One live instance only (the bell polls): at the top of the sidebar on
+  // desktop, in the top bar on phones.
   const tools = (align: "left" | "right") => (
     <div className="flex items-center gap-2">
       <NotificationBell endpoint="/api/notifications" href="/admin/orders" align={align} />
       <ThemePicker align={align} />
+      <LogoutButton icon />
     </div>
   );
 
-  const item = ({ href, label, Icon }: NavLink) => {
-    const active = pathname.startsWith(href);
+  const item = ({ href, label, Icon, also = [] }: NavLink) => {
+    const active = [href, ...also].some((p) => pathname.startsWith(p));
     return (
       <Link
         key={href}
@@ -118,7 +118,7 @@ export function AdminNav({ name, isSuper }: { name: string; isSuper: boolean }) 
             {APP_NAME}
           </span>
         </Link>
-        {desktop === false ? tools("right") : <span className="w-[5.5rem]" />}
+        {desktop === false ? tools("right") : <span className="w-[8.5rem]" />}
       </header>
 
       {/* Phone: backdrop behind the open drawer */}
@@ -137,46 +137,28 @@ export function AdminNav({ name, isSuper }: { name: string; isSuper: boolean }) 
           open ? "translate-x-0 shadow-pop" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-4">
+        <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-3">
           <Brand sub={isSuper ? "Super admin" : "Admin"} />
-          {desktop ? (
-            tools("left")
-          ) : (
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setOpen(false)}
-              className="grid h-10 w-10 place-items-center rounded-xl text-ink-2 hover:bg-muted md:hidden"
-            >
-              <X className="h-5 w-5" aria-hidden />
-            </button>
-          )}
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+            className="grid h-10 w-10 place-items-center rounded-xl text-ink-2 hover:bg-muted md:hidden"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
         </div>
+        {/* Desktop: notifications, theme and log out sit in a row under the name. */}
+        {desktop && <div className="px-4 pb-3">{tools("left")}</div>}
 
-        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-2">
-          <div className="space-y-1">
-            <p className="px-3 pb-1 text-xs font-semibold text-ink-3">Store</p>
-            {STORE_LINKS.map(item)}
-          </div>
-          {isSuper && (
-            <div className="space-y-1">
-              <p className="px-3 pb-1 text-xs font-semibold text-ink-3">Owner</p>
-              {OWNER_LINKS.map(item)}
-            </div>
-          )}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+          {STORE_LINKS.map(item)}
+          {isSuper && OWNER_LINKS.map(item)}
         </nav>
 
         <div className="space-y-1 border-t border-line p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <InstallButton className="mb-2 w-full justify-center" />
           {item({ href: "/admin/account", label: name, Icon: UserRound })}
-          <button
-            type="button"
-            onClick={logout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-ink-2 hover:bg-muted hover:text-ink"
-          >
-            <LogOut className="h-5 w-5" aria-hidden />
-            Log out
-          </button>
         </div>
       </aside>
     </>

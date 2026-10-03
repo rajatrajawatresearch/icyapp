@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       data: {
         name: fields.name!,
         price: fields.price!,
-        stockQty: fields.stockQty!,
+        stockQty: fields.stockQty ?? null,
         category: fields.category ?? "General",
         isActive: fields.isActive ?? true,
         imageUrl,

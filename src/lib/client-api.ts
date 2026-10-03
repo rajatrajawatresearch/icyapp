@@ -57,17 +57,43 @@ export type Polled<T> = { changed: true; data: T } | { changed: false };
  */
 export function createPoller<T>(url: string) {
   let etag: string | null = null;
-  return async function poll(): Promise<Polled<T>> {
+  /** Bumped when a write starts and when it ends. */
+  let epoch = 0;
+
+  async function poll(): Promise<Polled<T>> {
+    const started = epoch;
     const res = await fetch(url, {
       cache: "no-store",
       headers: etag ? { "If-None-Match": etag } : undefined,
     });
     if (res.status === 304) return { changed: false };
     const data = await readJson<T>(url, res);
+    // This answer overlapped a write, so it may show the list as it was
+    // before the write. Drop it; the next poll fetches the list in full.
+    if (started !== epoch) return { changed: false };
     etag = res.headers.get("ETag");
     return { changed: true, data };
+  }
+
+  /**
+   * Wrap every write to the polled list in this. Without it, a poll already
+   * in flight can land after the write's own answer and put the old values
+   * back on screen for a few seconds, which looks like the change was lost.
+   */
+  poll.during = async function during<R>(write: () => Promise<R>): Promise<R> {
+    epoch++;
+    try {
+      return await write();
+    } finally {
+      epoch++;
+      etag = null;
+    }
   };
+  return poll;
 }
+
+/** The `during` of a poller, for components that only need to wrap writes. */
+export type WriteGuard = <R>(write: () => Promise<R>) => Promise<R>;
 
 export function errorMessage(e: unknown) {
   return e instanceof Error ? e.message : "Something went wrong";

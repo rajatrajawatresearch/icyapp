@@ -7,7 +7,8 @@ export type ProductDTO = {
   id: string;
   name: string;
   price: number;
-  stockQty: number;
+  /** Units left; null when the store doesn't track stock for this product. */
+  stockQty: number | null;
   imageUrl: string | null;
   isActive: boolean;
   category: string;
@@ -20,6 +21,8 @@ export type CustomerDTO = {
   phone: string;
   token: string;
   isActive: boolean;
+  /** When a device first opened the link and became its only device (null = not opened yet). */
+  deviceBoundAt: string | null;
   scheduledDeleteAt: string | null;
   createdAt: string;
   orderCount: number;
@@ -32,6 +35,8 @@ export type PaymentDTO = {
   qrImageUrl: string | null;
   confirmedAt: string | null;
   confirmedByName: string | null;
+  /** Screenshots the customer sent as proof of a UPI payment, oldest first. */
+  proofs: { id: string; url: string; createdAt: string }[];
 };
 
 export type OrderDTO = {
@@ -101,6 +106,7 @@ export function toCustomerDTO(
     phone: c.phone,
     token: c.token,
     isActive: c.isActive,
+    deviceBoundAt: c.deviceHash ? iso(c.deviceBoundAt) : null,
     scheduledDeleteAt: iso(c.scheduledDeleteAt),
     createdAt: c.createdAt.toISOString(),
     orderCount: c._count.orders,
@@ -110,7 +116,12 @@ export function toCustomerDTO(
 export const orderInclude = {
   deliveryPartner: { select: { id: true, name: true } },
   items: { orderBy: { id: "asc" } },
-  payment: { include: { confirmedBy: { select: { name: true } } } },
+  payment: {
+    include: {
+      confirmedBy: { select: { name: true } },
+      proofs: { orderBy: { createdAt: "asc" } },
+    },
+  },
 } satisfies Prisma.OrderInclude;
 
 export function toOrderDTO(
@@ -150,6 +161,11 @@ export function toOrderDTO(
           qrImageUrl: o.payment.qrImageUrl,
           confirmedAt: iso(o.payment.confirmedAt),
           confirmedByName: o.payment.confirmedBy?.name ?? null,
+          proofs: o.payment.proofs.map((p) => ({
+            id: p.id,
+            url: p.imageUrl,
+            createdAt: p.createdAt.toISOString(),
+          })),
         }
       : null,
   };

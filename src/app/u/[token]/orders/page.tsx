@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { resolveCustomer } from "@/lib/customer";
+import { customerAccess } from "@/lib/customer";
+import { redirectToLinkHost } from "@/lib/device";
 import { orderInclude, toOrderDTO } from "@/lib/dto";
 import { getPickupLocation } from "@/lib/settings";
+import { DeviceGate } from "../DeviceGate";
 import { CustomerOrders } from "./CustomerOrders";
 
 export const metadata: Metadata = {
@@ -20,8 +22,12 @@ export default async function CustomerOrdersPage({
 }) {
   const { token } = await params;
   const { placed } = await searchParams;
-  const customer = await resolveCustomer(token);
-  if (!customer) notFound();
+  await redirectToLinkHost(`/u/${token}/orders`);
+  const access = await customerAccess(token);
+  if (access.state === "invalid") notFound();
+  if (access.state !== "ok")
+    return <DeviceGate token={token} state={access.state} />;
+  const { customer } = access;
 
   const [orders, pickup] = await Promise.all([
     prisma.order.findMany({

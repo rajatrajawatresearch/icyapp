@@ -38,7 +38,17 @@ export async function PATCH(
       // Guard against a concurrent status change (e.g. double-cancel restoring stock twice).
       const { count } = await tx.order.updateMany({
         where: { id, status: current.status },
-        data: { status },
+        data: {
+          status,
+          // The hand-over time follows the status: stamped when the store
+          // completes the order itself (the rider's list and "delivered it"
+          // read it), cleared when a completed order is reopened.
+          ...(status === "COMPLETED" && {
+            deliveredAt: current.deliveredAt ?? new Date(),
+          }),
+          ...(current.status === "COMPLETED" &&
+            status !== "CANCELLED" && { deliveredAt: null }),
+        },
       });
       if (count === 0)
         throw new UserError(
@@ -49,8 +59,9 @@ export async function PATCH(
       if (status === "CANCELLED") {
         for (const item of current.items) {
           if (!item.productId) continue;
+          // Only products with tracked stock have a count to give back.
           await tx.product.updateMany({
-            where: { id: item.productId },
+            where: { id: item.productId, stockQty: { not: null } },
             data: { stockQty: { increment: item.qty } },
           });
         }

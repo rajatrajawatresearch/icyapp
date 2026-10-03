@@ -1,11 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReceiptText, Store } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemePicker } from "@/components/ThemePicker";
+
+const RENEW_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Top bar shared by the customer's shop and orders screens. */
 export function CustomerHeader({
@@ -19,6 +22,21 @@ export function CustomerHeader({
   subtitle?: string;
   children?: React.ReactNode;
 }) {
+  // The link is tied to this device by a cookie that browsers expire after
+  // about a year. Renewing it now and then keeps a regular customer signed in.
+  useEffect(() => {
+    const key = `device-renewed:${token}`;
+    try {
+      if (Date.now() - Number(localStorage.getItem(key) ?? 0) < RENEW_EVERY_MS)
+        return;
+      fetch(`/api/customer/${token}/device`, { method: "POST" })
+        .then((res) => res.ok && localStorage.setItem(key, String(Date.now())))
+        .catch(() => {});
+    } catch {
+      // Storage blocked: the cookie simply isn't renewed this time.
+    }
+  }, [token]);
+
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/85 px-4 py-2.5 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3">

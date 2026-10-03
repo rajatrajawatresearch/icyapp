@@ -1,4 +1,4 @@
-import { resolveCustomer } from "@/lib/customer";
+import { customerAccess } from "@/lib/customer";
 import { APP_NAME } from "@/lib/brand";
 import { manifestResponse } from "@/lib/pwa";
 
@@ -8,7 +8,9 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  if (!(await resolveCustomer(token)))
+  // Browsers fetch the manifest without cookies, so only the link itself is
+  // checked here, not the device. It holds nothing but the app's name.
+  if ((await customerAccess(token)).state === "invalid")
     return new Response("Not found", { status: 404 });
   return manifestResponse({
     id: `/u/${token}`,

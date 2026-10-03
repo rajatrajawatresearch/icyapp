@@ -7,6 +7,11 @@ import { audit } from "@/lib/audit";
 import { purgeExpired } from "@/lib/purge";
 import { generateCustomerToken } from "@/lib/customer";
 import { customerInclude, toCustomerDTO } from "@/lib/dto";
+import {
+  PHONE_ERROR,
+  formatIndianMobile,
+  indianMobileDigits,
+} from "@/lib/phone";
 
 export async function GET() {
   const auth = await requireAdminApi();
@@ -33,10 +38,13 @@ export async function GET() {
 
 const CreateCustomerSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[+\d][\d\s-]{6,18}$/, "Enter a valid phone number"),
+  // Indian mobiles only, stored one way ("+91 98765 43210") however it was typed.
+  phone: z.string().transform((value, ctx) => {
+    const digits = indianMobileDigits(value);
+    if (digits) return formatIndianMobile(digits);
+    ctx.addIssue({ code: "custom", message: PHONE_ERROR });
+    return z.NEVER;
+  }),
 });
 
 /** POST /api/admin/customers — add a customer and generate their private link token. */

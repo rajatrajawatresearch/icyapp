@@ -1,16 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Banknote, Bike, CircleCheck, QrCode, ReceiptText } from "lucide-react";
+import {
+  Banknote,
+  Bike,
+  CircleCheck,
+  ExternalLink,
+  QrCode,
+  ReceiptText,
+  Upload,
+} from "lucide-react";
 import type { OrderDTO } from "@/lib/dto";
-import { FINAL_STATUSES, POLL_INTERVAL_MS } from "@/lib/constants";
-import { api, createPoller, errorMessage } from "@/lib/client-api";
+import {
+  FINAL_STATUSES,
+  MAX_PAYMENT_PROOFS,
+  POLL_INTERVAL_MS,
+} from "@/lib/constants";
+import {
+  api,
+  createPoller,
+  errorMessage,
+  type WriteGuard,
+} from "@/lib/client-api";
 import { formatDateTime, inr } from "@/lib/format";
+import { compressImage } from "@/lib/image";
+import { ImageThumbs } from "@/components/ImageThumbs";
 import { OrderLines } from "@/components/OrderLines";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PickupCard, type Pickup } from "@/components/map/PickupCard";
-import { btnPrimary, btnSuccess, card } from "@/components/ui";
+import { btnPrimary, btnSecondary, btnSuccess, card } from "@/components/ui";
 import { CustomerHeader, CustomerTabs } from "../CustomerChrome";
 
 const STEPS = ["PLACED", "CONFIRMED", "OUT_FOR_DELIVERY", "COMPLETED"] as const;
@@ -97,6 +116,7 @@ export function CustomerOrders({
               order={o}
               pickup={pickup}
               onUpdated={replaceOrder}
+              guard={poll.during}
             />
           ))}
         </ul>
@@ -112,11 +132,13 @@ function OrderCard({
   order: o,
   pickup,
   onUpdated,
+  guard,
 }: {
   token: string;
   order: OrderDTO;
   pickup: Pickup;
   onUpdated: (o: OrderDTO) => void;
+  guard: WriteGuard;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,9 +160,11 @@ function OrderCard({
     setError(null);
     try {
       onUpdated(
-        await api<OrderDTO>(`/api/customer/${token}/orders/${o.id}/received`, {
-          method: "POST",
-        }),
+        await guard(() =>
+          api<OrderDTO>(`/api/customer/${token}/orders/${o.id}/received`, {
+            method: "POST",
+          }),
+        ),
       );
     } catch (e) {
       setError(errorMessage(e));
@@ -197,7 +221,9 @@ function OrderCard({
         </div>
       )}
 
-      {pay && !cancelled && <PaymentPanel payment={pay} fulfilment={o.fulfilmentType} />}
+      {pay && !cancelled && (
+        <PaymentPanel token={token} order={o} payment={pay} onUpdated={onUpdated} guard={guard} />
+      )}
 
       {canConfirm && (
         <button
@@ -225,11 +251,17 @@ function OrderCard({
 }
 
 function PaymentPanel({
+  token,
+  order,
   payment: pay,
-  fulfilment,
+  onUpdated,
+  guard,
 }: {
+  token: string;
+  order: OrderDTO;
   payment: NonNullable<OrderDTO["payment"]>;
-  fulfilment: OrderDTO["fulfilmentType"];
+  onUpdated: (o: OrderDTO) => void;
+  guard: WriteGuard;
 }) {
   if (pay.status === "PAID") {
     return (
@@ -244,33 +276,147 @@ function PaymentPanel({
       <p className="mt-3 flex items-center gap-2.5 rounded-xl bg-subtle p-3 text-sm text-ink-2">
         <Banknote className="h-5 w-5 shrink-0 text-ink-3" aria-hidden />
         Pay {inr(pay.amount)} in cash at{" "}
-        {fulfilment === "PICKUP" ? "pickup" : "delivery"}.
+        {order.fulfilmentType === "PICKUP" ? "pickup" : "delivery"}.
       </p>
-    );
-  }
-  if (!pay.qrImageUrl) {
-    return (
-      <div className="mt-3 flex items-center gap-3 rounded-xl bg-warning-soft p-3 text-sm text-warning-ink">
-        <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-warning border-t-transparent" />
-        Waiting for the store to send your UPI QR…
-      </div>
     );
   }
   return (
-    <div className="mt-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-center">
-      <p className="flex items-center justify-center gap-2 text-base font-extrabold text-brand-900">
-        <QrCode className="h-5 w-5" aria-hidden />
-        Scan to pay {inr(pay.amount)}
+    <>
+      {pay.qrImageUrl ? (
+        <div className="mt-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-center">
+          <p className="flex items-center justify-center gap-2 text-base font-extrabold text-brand-900">
+            <QrCode className="h-5 w-5" aria-hidden />
+            Scan to pay {inr(pay.amount)}
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={pay.qrImageUrl}
+            alt="UPI QR code"
+            className="mx-auto mt-3 w-full max-w-[260px] rounded-xl bg-on-solid p-2"
+          />
+          {/* Paying from the same phone: the QR has to be saved and picked in the UPI app. */}
+          <a
+            href={pay.qrImageUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-brand-700"
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden />
+            Open the QR to save it
+          </a>
+          <p className="mt-1 text-xs text-brand-800">
+            Paying from this phone? Save the QR and choose it in your UPI app.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-3 rounded-xl bg-warning-soft p-3 text-sm text-warning-ink">
+          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-warning border-t-transparent" />
+          Waiting for the store to send your UPI QR…
+        </div>
+      )}
+      {(pay.qrImageUrl || pay.proofs.length > 0) && (
+        <PaymentProofs
+          token={token}
+          orderId={order.id}
+          proofs={pay.proofs}
+          onUpdated={onUpdated}
+          guard={guard}
+        />
+      )}
+    </>
+  );
+}
+
+/** After paying, the customer sends one or more screenshots; the store checks them and confirms. */
+function PaymentProofs({
+  token,
+  orderId,
+  proofs,
+  onUpdated,
+  guard,
+}: {
+  token: string;
+  orderId: string;
+  proofs: NonNullable<OrderDTO["payment"]>["proofs"];
+  onUpdated: (o: OrderDTO) => void;
+  guard: WriteGuard;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  /** While uploading: which file of how many. */
+  const [progress, setProgress] = useState<{ at: number; of: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const room = MAX_PAYMENT_PROOFS - proofs.length;
+
+  async function upload(files: File[]) {
+    const batch = files.slice(0, room);
+    setError(
+      files.length > room
+        ? `You can send ${MAX_PAYMENT_PROOFS} screenshots for one order, so only the first ${room} ${room === 1 ? "was" : "were"} sent.`
+        : null,
+    );
+    try {
+      await guard(async () => {
+        for (const [i, file] of batch.entries()) {
+          setProgress({ at: i + 1, of: batch.length });
+          const fd = new FormData();
+          // Keep the amount and reference number readable, but small enough for mobile data.
+          fd.set("file", await compressImage(file, { maxSide: 1600, quality: 0.85 }));
+          onUpdated(
+            await api<OrderDTO>(`/api/customer/${token}/orders/${orderId}/proofs`, {
+              method: "POST",
+              body: fd,
+            }),
+          );
+        }
+      });
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-line bg-subtle p-4">
+      <p className="text-sm font-bold text-ink">
+        {proofs.length ? "Payment screenshots sent" : "Paid? Send a screenshot"}
       </p>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={pay.qrImageUrl}
-        alt="UPI QR code"
-        className="mx-auto mt-3 w-full max-w-[260px] rounded-xl bg-on-solid p-2"
+      <p className="mt-0.5 text-xs text-ink-3">
+        {proofs.length
+          ? "The store is checking them and will confirm your payment here."
+          : "Upload the payment screenshot from your UPI app. The store checks it and confirms your payment."}
+      </p>
+      {proofs.length > 0 && (
+        <ImageThumbs images={proofs} alt="Payment screenshot" className="mt-3" />
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = "";
+          if (files.length) upload(files);
+        }}
       />
-      <p className="mt-2 text-xs text-brand-800">
-        Once you have paid, the store confirms it here.
-      </p>
+      {room > 0 && (
+        <button
+          type="button"
+          className={`${proofs.length ? btnSecondary : btnPrimary} mt-3 w-full py-3`}
+          disabled={progress !== null}
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="h-4 w-4" aria-hidden />
+          {progress
+            ? `Uploading ${progress.at} of ${progress.of}…`
+            : proofs.length
+              ? "Add another screenshot"
+              : "Upload payment screenshot"}
+        </button>
+      )}
+      {error && <p className="mt-2 text-sm text-danger-ink">{error}</p>}
     </div>
   );
 }

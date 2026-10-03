@@ -22,6 +22,8 @@ import {
 type Form = {
   name: string;
   price: string;
+  /** Off by default: the product is always available and no count is kept. */
+  limitStock: boolean;
   stockQty: string;
   category: string;
   isActive: boolean;
@@ -29,6 +31,7 @@ type Form = {
 const EMPTY: Form = {
   name: "",
   price: "",
+  limitStock: false,
   stockQty: "",
   category: "",
   isActive: true,
@@ -80,7 +83,8 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
     setForm({
       name: p.name,
       price: String(p.price),
-      stockQty: String(p.stockQty),
+      limitStock: p.stockQty !== null,
+      stockQty: p.stockQty === null ? "" : String(p.stockQty),
       category: p.category,
       isActive: p.isActive,
     });
@@ -99,7 +103,8 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
     const fd = new FormData();
     fd.set("name", form.name);
     fd.set("price", form.price);
-    fd.set("stockQty", form.stockQty);
+    // Blank tells the server not to track stock for this product.
+    fd.set("stockQty", form.limitStock ? form.stockQty.trim() || "0" : "");
     fd.set("category", form.category);
     fd.set("isActive", String(form.isActive));
     const file = fileRef.current?.files?.[0];
@@ -177,39 +182,21 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={label} htmlFor="p-price">
-                Price (₹)
-              </label>
-              <input
-                id="p-price"
-                className={input}
-                required
-                inputMode="decimal"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className={label} htmlFor="p-stock">
-                Stock qty
-              </label>
-              <input
-                id="p-stock"
-                className={input}
-                required
-                inputMode="numeric"
-                type="number"
-                min="0"
-                step="1"
-                value={form.stockQty}
-                onChange={(e) => setForm({ ...form, stockQty: e.target.value })}
-              />
-            </div>
+          <div>
+            <label className={label} htmlFor="p-price">
+              Price (₹)
+            </label>
+            <input
+              id="p-price"
+              className={input}
+              required
+              inputMode="decimal"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+            />
           </div>
           <div>
             <label className={label} htmlFor="p-cat">
@@ -250,6 +237,45 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
             />
             Active (visible to customers)
           </label>
+          {/* Stock is optional: the count only appears when the store asks for it. */}
+          <div>
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-brand-600"
+                checked={form.limitStock}
+                onChange={(e) =>
+                  setForm({ ...form, limitStock: e.target.checked })
+                }
+              />
+              Limit stock (optional)
+            </label>
+            {form.limitStock ? (
+              <div className="mt-2 max-w-40">
+                <label className={label} htmlFor="p-stock">
+                  Units in stock
+                </label>
+                <input
+                  id="p-stock"
+                  className={input}
+                  required
+                  inputMode="numeric"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.stockQty}
+                  onChange={(e) =>
+                    setForm({ ...form, stockQty: e.target.value })
+                  }
+                />
+              </div>
+            ) : (
+              <p className="mt-1 pl-6 text-xs text-ink-3">
+                Off: customers can always order it. Deactivate the product when
+                you run out.
+              </p>
+            )}
+          </div>
           {error && <p className="text-sm text-danger-ink">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
             <button
@@ -310,7 +336,11 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
                 <p
                   className={`mt-1 text-xs ${p.stockQty === 0 ? "text-danger-ink" : "text-ink-2"}`}
                 >
-                  {p.stockQty === 0 ? "Out of stock" : `${p.stockQty} in stock`}
+                  {p.stockQty === null
+                    ? "Always available"
+                    : p.stockQty === 0
+                      ? "Out of stock"
+                      : `${p.stockQty} in stock`}
                   {!p.isActive && ", hidden from customers"}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">

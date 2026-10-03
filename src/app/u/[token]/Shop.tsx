@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/dto";
+import { MAX_LINE_QTY } from "@/lib/constants";
 import { api, errorMessage } from "@/lib/client-api";
 import { inr } from "@/lib/format";
 import type { LatLng } from "@/lib/maps";
@@ -71,7 +72,7 @@ export function Shop({
       const clean: Cart = {};
       for (const [id, qty] of Object.entries(saved)) {
         const p = byId.get(id);
-        if (p && p.stockQty > 0) clean[id] = Math.min(qty, p.stockQty);
+        if (p && p.stockQty !== 0) clean[id] = Math.min(qty, maxQty(p));
       }
       // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from localStorage after mount
       setCart(clean);
@@ -92,7 +93,7 @@ export function Shop({
     const p = byId.get(id);
     if (!p) return;
     const next = { ...cart };
-    const clamped = Math.max(0, Math.min(qty, p.stockQty));
+    const clamped = Math.max(0, Math.min(qty, maxQty(p)));
     if (clamped === 0) delete next[id];
     else next[id] = clamped;
     updateCart(next);
@@ -211,7 +212,7 @@ export function Shop({
                       Sold out
                     </span>
                   )}
-                  {!soldOut && p.stockQty <= 5 && (
+                  {p.stockQty !== null && !soldOut && p.stockQty <= 5 && (
                     <span className="absolute top-2 left-2 rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-warning-ink shadow-xs">
                       Only {p.stockQty} left
                     </span>
@@ -238,7 +239,7 @@ export function Shop({
                     ) : (
                       <Stepper
                         qty={qty}
-                        max={p.stockQty}
+                        max={maxQty(p)}
                         onChange={(n) => setQty(p.id, n)}
                       />
                     )}
@@ -322,7 +323,7 @@ export function Shop({
                   <div className="w-28 shrink-0">
                     <Stepper
                       qty={qty}
-                      max={p.stockQty}
+                      max={maxQty(p)}
                       onChange={(n) => setQty(p.id, n)}
                     />
                   </div>
@@ -458,6 +459,11 @@ export function Shop({
       <CustomerTabs token={token} />
     </div>
   );
+}
+
+/** Most of one product a cart can hold: what is left, or the order cap when stock isn't tracked. */
+function maxQty(p: ProductDTO) {
+  return p.stockQty ?? MAX_LINE_QTY;
 }
 
 function Stepper({

@@ -3,7 +3,8 @@ import { UserError } from "@/lib/api";
 type ProductFields = {
   name?: string;
   price?: number;
-  stockQty?: number;
+  /** null = stock is not tracked. */
+  stockQty?: number | null;
   category?: string;
   isActive?: boolean;
 };
@@ -37,13 +38,15 @@ export function parseProductForm(
     out.price = Math.round(n * 100) / 100;
   } else if (!partial) throw new UserError("Price is required");
 
+  // Stock is optional: left out or blank means "don't track it".
   const stock = str("stockQty");
-  if (stock !== undefined) {
+  if (stock === "") out.stockQty = null;
+  else if (stock !== undefined) {
     const n = Number(stock);
-    if (!stock || !Number.isInteger(n) || n < 0 || n > 1_000_000)
-      throw new UserError("Stock must be a whole number ≥ 0");
+    if (!Number.isInteger(n) || n < 0 || n > 1_000_000)
+      throw new UserError("Stock must be a whole number, 0 or more");
     out.stockQty = n;
-  } else if (!partial) throw new UserError("Stock is required");
+  }
 
   const category = str("category");
   if (category !== undefined) out.category = category.slice(0, 60) || "General";

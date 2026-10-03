@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import type { OrderDTO } from "@/lib/dto";
 import { POLL_INTERVAL_MS } from "@/lib/constants";
-import { api, createPoller, errorMessage } from "@/lib/client-api";
+import {
+  api,
+  createPoller,
+  errorMessage,
+  type WriteGuard,
+} from "@/lib/client-api";
 import { inr, timeAgo } from "@/lib/format";
 import { googleDirectionsUrl } from "@/lib/maps";
 import { ListSkeleton } from "@/components/Skeleton";
@@ -127,6 +132,7 @@ export function DeliveryClient() {
               order={o}
               isNew={newIds.has(o.id)}
               now={now}
+              guard={poll.during}
               onUpdated={() => {
                 setNewIds((prev) => {
                   const next = new Set(prev);
@@ -148,11 +154,13 @@ function DeliveryCard({
   isNew,
   now,
   onUpdated,
+  guard,
 }: {
   order: OrderDTO;
   isNew: boolean;
   now: number;
   onUpdated: () => void;
+  guard: WriteGuard;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,7 +179,9 @@ function DeliveryCard({
     setBusy(true);
     setError(null);
     try {
-      await api(`/api/delivery/orders/${o.id}`, { method: "POST", json });
+      await guard(() =>
+        api(`/api/delivery/orders/${o.id}`, { method: "POST", json }),
+      );
       onUpdated();
     } catch (e) {
       setError(errorMessage(e));

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdminPage } from "@/lib/auth";
+import { Watermark } from "@/components/Watermark";
 import { DeliveryHeader } from "./DeliveryHeader";
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default async function DeliveryLayout({
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-4">
         {children}
       </main>
+      <Watermark text={`${me.name} · ${me.email}`} />
     </div>
   );
 }

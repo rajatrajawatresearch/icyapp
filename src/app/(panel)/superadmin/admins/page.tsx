@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import { requireAdminPage } from "@/lib/auth";
-import { TeamClient } from "../../TeamClient";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Team" };
-
-export default async function TeamPage() {
-  const me = await requireAdminPage({ superOnly: true });
-  return <TeamClient myId={me.id} scope="all" />;
+/** The team moved into Settings; old links and bookmarks still land on it. */
+export default function OldTeamPage() {
+  redirect("/superadmin/settings/team");
 }

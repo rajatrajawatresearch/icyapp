@@ -25,7 +25,13 @@ export async function POST(
   const [customer] = await prisma.$transaction([
     prisma.customer.update({
       where: { id },
-      data: { token: generateCustomerToken(), isActive: true },
+      // A new link starts fresh: whoever opens it first becomes its device.
+      data: {
+        token: generateCustomerToken(),
+        isActive: true,
+        deviceHash: null,
+        deviceBoundAt: null,
+      },
       include: customerInclude,
     }),
     prisma.pushSubscription.deleteMany({ where: { customerId: id } }),

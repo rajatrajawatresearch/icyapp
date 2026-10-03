@@ -283,3 +283,45 @@ body {
     overscroll-behavior-y: none;
   }
 }
+
+/* ---- Screen privacy (see components/ScreenShield.tsx and Watermark.tsx) ---- */
+
+/* The cover: there all the time, shown only while <html data-shield="on">. */
+.screen-shield {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--page);
+  text-align: center;
+}
+html[data-shield="on"] .screen-shield {
+  display: grid;
+}
+
+/* The viewer's name tiled over everything, above dialogs, under the cover. */
+.watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background: var(--ink);
+  opacity: 0.055;
+  mask-repeat: repeat;
+  -webkit-mask-repeat: repeat;
+}
+
+/* No "save image" on long-press, no dragging a picture out of the app. */
+img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+
+/* Nothing prints, and "save as PDF" gives an empty page. */
+@media print {
+  body {
+    display: none !important;
+  }
+}

@@ -4,6 +4,7 @@ import { isSuperAdmin, requireAdminPage } from "@/lib/auth";
 import { purgeExpired } from "@/lib/purge";
 import { formatDate, formatDateTime, inr } from "@/lib/format";
 import { startOfStoreDay } from "@/lib/time";
+import { SectionTabs } from "@/components/SectionTabs";
 import { card, pageTitle } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Reports" };
@@ -96,6 +97,8 @@ export default async function ReportsPage() {
 
   return (
     <div>
+      {/* The audit log is the other half of this section, for the super admin only. */}
+      {superView && <SectionTabs section="reports" />}
       <h1 className={pageTitle}>Reports</h1>
       <p className="text-sm text-ink-3">
         Today, {formatDate(today)}

@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bike,
+  Check,
   CircleCheck,
+  Images,
   MapPin,
   QrCode,
   Store,
@@ -18,11 +20,17 @@ import {
   ORDER_STATUS_LABEL,
   POLL_INTERVAL_MS,
 } from "@/lib/constants";
-import { api, createPoller, errorMessage } from "@/lib/client-api";
+import {
+  api,
+  createPoller,
+  errorMessage,
+  type WriteGuard,
+} from "@/lib/client-api";
 import { inr, timeAgo } from "@/lib/format";
 import { compressImage } from "@/lib/image";
 import { googleDirectionsUrl } from "@/lib/maps";
 import { DeleteButton } from "@/components/DeleteButton";
+import { ImageThumbs } from "@/components/ImageThumbs";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { ListSkeleton } from "@/components/Skeleton";
 import { OrderLines } from "@/components/OrderLines";
@@ -35,6 +43,7 @@ import {
   card,
   emptyState,
   field,
+  input,
   label,
   pageTitle,
   pill,
@@ -43,6 +52,8 @@ import {
 type Filter = "open" | "upi" | "all";
 type Partner = { id: string; name: string };
 type Orders = { items: OrderDTO[]; trash: OrderDTO[] };
+
+const SETTABLE: readonly string[] = ADMIN_SETTABLE_STATUSES;
 
 const isUpiPending = (o: OrderDTO) =>
   o.payment?.method === "UPI" &&
@@ -198,6 +209,7 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
               onAcknowledge={() => acknowledge(o.id)}
               onDeleted={load}
               partners={partners}
+              guard={poll.during}
             />
           ))}
         </ul>
@@ -227,6 +239,7 @@ function OrderCard({
   onAcknowledge,
   onDeleted,
   partners,
+  guard,
 }: {
   order: OrderDTO;
   isNew: boolean;
@@ -236,9 +249,15 @@ function OrderCard({
   onAcknowledge: () => void;
   onDeleted: () => void;
   partners: Partner[];
+  guard: WriteGuard;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** What the last save did, shown for a moment so it is clear it went through. */
+  const [saved, setSaved] = useState<string | null>(null);
+  /** The value just picked in a dropdown, shown while it is being saved. */
+  const [picked, setPicked] = useState<{ status?: string; partner?: string }>({});
+  const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
   /** The delivery-charge editor: null when closed, otherwise the typed amount. */
   const [feeDraft, setFeeDraft] = useState<string | null>(null);
@@ -250,24 +269,40 @@ function OrderCard({
       ? { lat: o.deliveryLat, lng: o.deliveryLng }
       : null;
 
-  async function run(key: string, fn: () => Promise<OrderDTO>) {
+  useEffect(() => () => clearTimeout(savedTimer.current), []);
+
+  // Every control on the card saves by itself; `done` is what to say once it has.
+  async function run(key: string, done: string, fn: () => Promise<OrderDTO>) {
     setBusy(key);
     setError(null);
+    setSaved(null);
+    clearTimeout(savedTimer.current);
     try {
-      onUpdated(await fn());
+      onUpdated(await guard(fn));
+      setSaved(done);
+      savedTimer.current = setTimeout(() => setSaved(null), 4000);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
       setBusy(null);
+      setPicked({});
     }
   }
 
   function assign(deliveryPartnerId: string) {
-    run("assign", () =>
-      api<OrderDTO>(`/api/admin/orders/${o.id}/assign`, {
-        method: "POST",
-        json: { deliveryPartnerId: deliveryPartnerId || null },
-      }),
+    if (deliveryPartnerId === (o.deliveryPartner?.id ?? "")) return;
+    const partner = partners.find((p) => p.id === deliveryPartnerId);
+    setPicked({ partner: deliveryPartnerId });
+    run(
+      "assign",
+      partner
+        ? `Saved. ${partner.name} has been told.`
+        : "Saved. Nobody is assigned now.",
+      () =>
+        api<OrderDTO>(`/api/admin/orders/${o.id}/assign`, {
+          method: "POST",
+          json: { deliveryPartnerId: deliveryPartnerId || null },
+        }),
     );
   }
 
@@ -286,7 +321,7 @@ function OrderCard({
       return;
     }
     setFeeDraft(null);
-    run("fee", () =>
+    run("fee", "Saved. The customer has been told the new total.", () =>
       api<OrderDTO>(`/api/admin/orders/${o.id}/delivery-fee`, {
         method: "PATCH",
         json: { fee },
@@ -295,12 +330,25 @@ function OrderCard({
   }
 
   function changeStatus(status: string) {
+    if (status === o.status) return;
     if (
       status === "CANCELLED" &&
-      !window.confirm(`Cancel order #${o.number}? Stock will be returned.`)
+      !window.confirm(
+        `Cancel order #${o.number}? This can't be undone. Counted stock goes back.`,
+      )
     )
       return;
-    run("status", () =>
+    // A completed order leaves the Open list, so an unpaid one is easy to forget.
+    if (
+      status === "COMPLETED" &&
+      pay?.status === "PENDING" &&
+      !window.confirm(
+        `Order #${o.number} is not paid yet (${inr(o.total)} by ${pay.method === "UPI" ? "UPI" : "cash"}). Complete it anyway? You can still mark it paid afterwards.`,
+      )
+    )
+      return;
+    setPicked({ status });
+    run("status", "Saved. The customer has been told.", () =>
       api<OrderDTO>(`/api/admin/orders/${o.id}`, {
         method: "PATCH",
         json: { status },
@@ -309,7 +357,7 @@ function OrderCard({
   }
 
   function uploadQr(file: File) {
-    run("qr", async () => {
+    run("qr", "QR sent to the customer.", async () => {
       const fd = new FormData();
       // Screenshots are large; keep the QR sharp but small enough to upload fast.
       fd.set("file", await compressImage(file, { maxSide: 1600, quality: 0.9 }));
@@ -323,7 +371,7 @@ function OrderCard({
   function markPaid() {
     if (!window.confirm(`Confirm ${inr(o.total)} received for order #${o.number}?`))
       return;
-    run("paid", () =>
+    run("paid", "Payment marked as received.", () =>
       api<OrderDTO>(`/api/admin/orders/${o.id}/mark-paid`, { method: "POST" }),
     );
   }
@@ -363,6 +411,12 @@ function OrderCard({
         <div className="flex flex-col items-end gap-1.5">
           <StatusBadge status={o.status} />
           {pay && <PaymentBadge method={pay.method} status={pay.status} />}
+          {upiPending && pay.proofs.length > 0 && (
+            <span className={`${pill} bg-warning-soft text-warning-ink`}>
+              <Images className="h-3.5 w-3.5" aria-hidden />
+              Proof sent
+            </span>
+          )}
         </div>
       </div>
 
@@ -410,7 +464,8 @@ function OrderCard({
       </div>
 
       {pay?.method === "UPI" && (
-        <div className="mt-3 flex items-center gap-3 rounded-xl bg-subtle p-2.5">
+        <div className="mt-3 rounded-xl bg-subtle p-2.5">
+        <div className="flex items-center gap-3">
           {pay.qrImageUrl ? (
             <a href={pay.qrImageUrl} target="_blank" rel="noreferrer" className="shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -428,10 +483,32 @@ function OrderCard({
           <p className="text-sm text-ink-2">
             {pay.status === "PAID"
               ? `Paid, confirmed by ${pay.confirmedByName ?? "the store"}.`
-              : pay.qrImageUrl
-                ? "QR sent. Waiting for the customer to pay."
-                : "The customer is waiting for a QR."}
+              : pay.proofs.length
+                ? "The customer says they have paid. Check the proof below."
+                : pay.qrImageUrl
+                  ? "QR sent. Waiting for the customer to pay."
+                  : "The customer is waiting for a QR."}
           </p>
+        </div>
+          {pay.proofs.length > 0 && (
+            <div className="mt-2.5 border-t border-line pt-2.5">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                <Images className="h-4 w-4 text-ink-3" aria-hidden />
+                Payment proof from the customer ({pay.proofs.length})
+              </p>
+              <ImageThumbs
+                images={pay.proofs}
+                alt="Payment screenshot"
+                className="mt-2"
+              />
+              {upiPending && (
+                <p className="mt-2 text-xs text-ink-3">
+                  Tap a screenshot to open it. If the amount ({inr(o.total)}) has
+                  reached you, press Mark paid.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -470,46 +547,89 @@ function OrderCard({
 
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <select
-          aria-label="Order status"
-          className={`${field} max-w-full`}
-          value=""
-          disabled={closed || busy !== null}
-          onChange={(e) => e.target.value && changeStatus(e.target.value)}
-        >
-          <option value="">{closed ? "Cancelled" : "Update status…"}</option>
-          {ADMIN_SETTABLE_STATUSES.filter((s) => s !== o.status).map((s) => (
-            <option key={s} value={s}>
-              {ORDER_STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
-
-        {o.fulfilmentType === "DELIVERY" && !closed && o.status !== "COMPLETED" && (
+      {/* The dropdowns show the saved value and save the moment one is picked. */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className={label} htmlFor={`status-${o.id}`}>
+            Order status
+          </label>
           <select
-            aria-label="Delivery partner"
-            className={`${field} max-w-full`}
-            value={o.deliveryPartner?.id ?? ""}
-            disabled={busy !== null}
-            onChange={(e) => assign(e.target.value)}
+            id={`status-${o.id}`}
+            className={input}
+            value={picked.status ?? o.status}
+            disabled={closed || busy !== null}
+            onChange={(e) => changeStatus(e.target.value)}
           >
-            <option value="">
-              {partners.length ? "Assign delivery…" : "No delivery partners yet"}
-            </option>
-            {/* Keep a deactivated-but-assigned partner visible so the select shows the truth. */}
-            {o.deliveryPartner &&
-              !partners.some((p) => p.id === o.deliveryPartner!.id) && (
-                <option value={o.deliveryPartner.id}>{o.deliveryPartner.name}</option>
-              )}
-            {partners.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+            {/* Placed and Paid are set by the app, not picked: listed only to show where the order is. */}
+            {!SETTABLE.includes(o.status) && (
+              <option value={o.status} disabled>
+                {ORDER_STATUS_LABEL[o.status]}
+              </option>
+            )}
+            {ADMIN_SETTABLE_STATUSES.filter(
+              // A paid order is already past "confirmed".
+              (s) => !(s === "CONFIRMED" && o.status === "PAID"),
+            ).map((s) => (
+              <option key={s} value={s}>
+                {ORDER_STATUS_LABEL[s]}
               </option>
             ))}
           </select>
-        )}
+        </div>
 
+        {o.fulfilmentType === "DELIVERY" && !closed && o.status !== "COMPLETED" && (
+          <div>
+            <label className={label} htmlFor={`partner-${o.id}`}>
+              Delivery partner
+            </label>
+            <select
+              id={`partner-${o.id}`}
+              className={input}
+              value={picked.partner ?? o.deliveryPartner?.id ?? ""}
+              disabled={busy !== null}
+              onChange={(e) => assign(e.target.value)}
+            >
+              <option value="">
+                {partners.length ? "Not assigned" : "No delivery partners yet"}
+              </option>
+              {/* Keep a deactivated-but-assigned partner visible so the select shows the truth. */}
+              {o.deliveryPartner &&
+                !partners.some((p) => p.id === o.deliveryPartner!.id) && (
+                  <option value={o.deliveryPartner.id}>{o.deliveryPartner.name}</option>
+                )}
+              {partners.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+      <p
+        aria-live="polite"
+        className={`mt-2 flex items-center gap-1.5 text-xs ${
+          saved && !busy ? "font-semibold text-success-ink" : "text-ink-3"
+        }`}
+      >
+        {busy ? (
+          <>
+            <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-ink-4 border-t-transparent" />
+            Saving…
+          </>
+        ) : saved ? (
+          <>
+            <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} aria-hidden />
+            {saved}
+          </>
+        ) : closed ? (
+          "This order is cancelled and can't be changed."
+        ) : (
+          "Changes save by themselves as soon as you pick them. No save button needed."
+        )}
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {canChangeFee && feeDraft === null && (
           <button
             type="button"

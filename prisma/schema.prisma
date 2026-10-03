@@ -45,6 +45,10 @@ model Customer {
   /// Private-link bearer credential: /u/<token>
   token             String             @unique
   isActive          Boolean            @default(true)
+  /// SHA-256 of the device cookie that first opened the link. The link then
+  /// works on that device only; null = nobody has opened it yet.
+  deviceHash        String?
+  deviceBoundAt     DateTime?
   scheduledDeleteAt DateTime?
   createdAt         DateTime           @default(now())
   orders            Order[]
@@ -83,7 +87,8 @@ model Product {
   admin             Admin       @relation(fields: [adminId], references: [id])
   name              String
   price             Decimal     @db.Decimal(10, 2)
-  stockQty          Int         @default(0)
+  /// Units left. Null = stock is not tracked, so the product never sells out.
+  stockQty          Int?
   imageUrl          String?
   isActive          Boolean     @default(true)
   category          String      @default("General")
@@ -147,20 +152,33 @@ model OrderItem {
 }
 
 model Payment {
-  id                 String        @id @default(cuid())
-  orderId            String        @unique
-  order              Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id                 String         @id @default(cuid())
+  orderId            String         @unique
+  order              Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   method             PaymentMethod
-  amount             Decimal       @db.Decimal(10, 2)
-  status             PaymentStatus @default(PENDING)
+  amount             Decimal        @db.Decimal(10, 2)
+  status             PaymentStatus  @default(PENDING)
   qrImageUrl         String?
   confirmedByAdminId String?
-  confirmedBy        Admin?        @relation(fields: [confirmedByAdminId], references: [id], onDelete: SetNull)
+  confirmedBy        Admin?         @relation(fields: [confirmedByAdminId], references: [id], onDelete: SetNull)
   confirmedAt        DateTime?
-  createdAt          DateTime      @default(now())
+  createdAt          DateTime       @default(now())
+  proofs             PaymentProof[]
 
   @@index([status, method])
   @@index([confirmedAt])
+}
+
+/// A screenshot the customer uploaded to show they paid a UPI order. Staff
+/// look at it, then confirm the payment themselves.
+model PaymentProof {
+  id        String   @id @default(cuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  createdAt DateTime @default(now())
+
+  @@index([paymentId])
 }
 
 model AuditLog {

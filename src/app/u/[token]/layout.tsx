@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Watermark } from "@/components/Watermark";
 import { APP_NAME } from "@/lib/brand";
+import { resolveCustomer } from "@/lib/customer";
 
 export async function generateMetadata({
   params,
@@ -13,10 +15,21 @@ export async function generateMetadata({
   };
 }
 
-export default function CustomerLayout({
+export default async function CustomerLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ token: string }>;
 }) {
-  return children;
+  const { token } = await params;
+  // Every screenshot of a customer's pages carries that customer's name
+  // (only once this device owns the link; before that nothing of theirs shows).
+  const customer = await resolveCustomer(token);
+  return (
+    <>
+      {children}
+      {customer && <Watermark text={`${customer.name} · ${customer.phone}`} />}
+    </>
+  );
 }
