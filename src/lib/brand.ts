@@ -10,14 +10,21 @@ export const MANIFEST_COLORS = {
   background: "#f4f4f2",
 } as const;
 
+/**
+ * Icons are cached for a day. Raise this whenever the artwork changes, so
+ * every device fetches the new one at once instead of showing the old logo.
+ */
+const ICON_VERSION = "5";
+const v = (path: string) => `${path}?v=${ICON_VERSION}`;
+
 export const ICONS = {
-  svg: "/brand/icon.svg",
-  /** The cube alone, for coloured backgrounds. */
-  cube: "/brand/cube.svg",
-  png192: "/icons/icon-192.png",
-  png512: "/icons/icon-512.png",
-  maskable512: "/icons/maskable-512.png",
-  apple: "/icons/apple-touch-icon.png",
-  favicon: "/icons/favicon-48.png",
-  badge: "/icons/badge-96.png",
+  svg: v("/brand/icon.svg"),
+  /** The diamond alone, for coloured backgrounds. */
+  cube: v("/brand/cube.svg"),
+  png192: v("/icons/icon-192.png"),
+  png512: v("/icons/icon-512.png"),
+  maskable512: v("/icons/maskable-512.png"),
+  apple: v("/icons/apple-touch-icon.png"),
+  favicon: v("/icons/favicon-48.png"),
+  badge: v("/icons/badge-96.png"),
 } as const;

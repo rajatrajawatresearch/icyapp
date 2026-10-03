@@ -45,8 +45,8 @@ self.addEventListener("push", (event) => {
       // The phone's own notification: it rings with the phone's sound.
       self.registration.showNotification(data.title || "Bazzzar", {
         body: data.body || "",
-        icon: "/icons/icon-192.png",
-        badge: "/icons/badge-96.png",
+        icon: "/icons/icon-192.png?v=5",
+        badge: "/icons/badge-96.png?v=5",
         tag: data.tag, // one notification per order, updated in place
         renotify: Boolean(data.tag), // ...and it rings again each time
         silent: false,

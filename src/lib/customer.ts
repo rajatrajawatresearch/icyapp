@@ -5,9 +5,9 @@ import { readDeviceId } from "./device";
 import { linkClosed } from "./link-expiry";
 import { randomToken, sha256 } from "./token";
 
-/** 16 characters ≈ 93 bits — an unguessable bearer link. */
+/** 32 random characters: a long link that says nothing and can't be guessed. */
 export function generateCustomerToken() {
-  return randomToken(16);
+  return randomToken(32);
 }
 
 export type CustomerAccess =

@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
-// The app's first address said "icyapp"; it is now "bazzzar". Staff pages on
-// the old address move to the new one. Customer pages (/u/…) are left out:
-// they have their own address and send themselves there (lib/device.ts).
-const OLD_HOST = "icyapp.vercel.app";
-const APP_ORIGIN = "https://bazzzar.vercel.app";
+// The app has one address, set in NEXT_PUBLIC_LINK_ORIGIN (a neutral name
+// that says nothing about the app or its host). Staff pages opened on any
+// other address forward to it. Customer pages (/u/…) are left out: they send
+// themselves there (lib/device.ts). Unset (local dev) means no forwarding.
+const LINK_ORIGIN = (process.env.NEXT_PUBLIC_LINK_ORIGIN ?? "").replace(/\/+$/, "");
 const STAFF_PATHS = ["/", "/admin/:path*", "/superadmin/:path*", "/delivery/:path*", "/a/:path*"];
 
 const nextConfig: NextConfig = {
@@ -13,10 +13,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   async redirects() {
+    if (!LINK_ORIGIN) return [];
     return STAFF_PATHS.map((source) => ({
       source,
-      has: [{ type: "host" as const, value: OLD_HOST }],
-      destination: `${APP_ORIGIN}${source === "/" ? "/" : source}`,
+      missing: [{ type: "host" as const, value: new URL(LINK_ORIGIN).host }],
+      destination: `${LINK_ORIGIN}${source === "/" ? "/" : source}`,
       // Temporary on purpose: browsers cache a permanent redirect for good.
       permanent: false,
     }));

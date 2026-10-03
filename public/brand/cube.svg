@@ -14,8 +14,9 @@
       <stop offset=".35" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
     <radialGradient id="halo" cx=".5" cy=".5" r=".5">
-      <stop offset="0" stop-color="#ffd43b" stop-opacity=".38"/>
-      <stop offset="1" stop-color="#ffd43b" stop-opacity="0"/>
+      <stop offset="0" stop-color="#ffe14d" stop-opacity=".75"/>
+      <stop offset=".45" stop-color="#ffc400" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#ffc400" stop-opacity="0"/>
     </radialGradient>
     <!-- one gradient per facet: lit from the top-left, darkest bottom-right -->
     <linearGradient id="c1" x1="0" y1="0" x2="1" y2="1">
@@ -45,11 +46,16 @@
     <filter id="soft" x="-30%" y="-60%" width="160%" height="220%">
       <feGaussianBlur stdDeviation="14"/>
     </filter>
+    <filter id="shine" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
   </defs>
 
   <!-- contact shadow, then the light the stone throws around itself -->
   <ellipse cx="256" cy="436" rx="104" ry="18" fill="#000" opacity=".6" filter="url(#soft)"/>
-  <circle cx="256" cy="270" r="210" fill="url(#halo)"/>
+  <circle cx="256" cy="270" r="236" fill="url(#halo)"/>
+  <!-- the stone's own light: its outline, blurred, behind it -->
+  <path d="M90 216 172 140H340L422 216 256 416Z" fill="#ffd21f" opacity=".85" filter="url(#shine)"/>
 
   <!-- the diamond: five crown facets over three pavilion facets -->
   <g stroke-linejoin="round" stroke-width="5">

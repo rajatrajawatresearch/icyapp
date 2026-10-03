@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Link2, RefreshCw } from "lucide-react";
 import { api, copyText, errorMessage } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/format";
+import { LINK_ORIGIN } from "@/lib/link-origin";
 import { confirmDialog } from "./ConfirmDialog";
 import { btnPrimary, btnSecondary, input } from "./ui";
 
@@ -48,7 +49,7 @@ export function AccessLink({
     setError(null);
     try {
       const { path } = await api<{ path: string }>(endpoint, { method: "POST" });
-      setFresh(`${window.location.origin}${path}`);
+      setFresh(`${LINK_ORIGIN || window.location.origin}${path}`);
       setCopied(false);
       onChange?.();
     } catch (e) {

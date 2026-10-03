@@ -5,6 +5,7 @@ import { Copy } from "lucide-react";
 import type { AdminDTO } from "@/lib/dto";
 import { api, copyText, errorMessage } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/format";
+import { LINK_ORIGIN } from "@/lib/link-origin";
 import { AccessLink } from "@/components/AccessLink";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { ListSkeleton } from "@/components/Skeleton";
@@ -123,7 +124,9 @@ export function TeamClient({
               type="button"
               className={btnSecondary}
               onClick={async () => {
-                setCopied(await copyText(`${window.location.origin}/admin/login`));
+                setCopied(
+                  await copyText(`${LINK_ORIGIN || window.location.origin}/admin/login`),
+                );
                 setTimeout(() => setCopied(false), 1500);
               }}
             >
