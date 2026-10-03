@@ -20,8 +20,6 @@ export const metadata: Metadata = {
   title: { default: APP_NAME, template: `%s | ${APP_NAME}` },
   description: APP_TAGLINE,
   robots: { index: false, follow: false },
-  // Customer and delivery pages override this with their own manifest.
-  manifest: "/manifest.webmanifest",
   icons: {
     icon: [
       { url: ICONS.svg, type: "image/svg+xml" },
@@ -29,7 +27,6 @@ export const metadata: Metadata = {
     ],
     apple: ICONS.apple,
   },
-  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
   formatDetection: { telephone: false },
 };
 

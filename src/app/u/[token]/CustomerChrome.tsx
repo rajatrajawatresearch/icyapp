@@ -56,13 +56,19 @@ export function CustomerHeader({
               endpoint={`/api/customer/${token}/notifications`}
               href={`/u/${token}/orders`}
               pushToken={token}
+              installable={false}
             />
             <ThemePicker />
           </div>
         </div>
         {children}
       </header>
-      <PushPrompt audience="customer" token={token} className="mx-4 mt-4" />
+      <PushPrompt
+        audience="customer"
+        token={token}
+        installable={false}
+        className="mx-4 mt-4"
+      />
     </>
   );
 }

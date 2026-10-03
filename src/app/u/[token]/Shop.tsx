@@ -20,7 +20,6 @@ import { api, errorMessage } from "@/lib/client-api";
 import { inr } from "@/lib/format";
 import type { LatLng } from "@/lib/maps";
 import { deliveryFeeFor, type DeliveryPricing } from "@/lib/pricing";
-import { InstallButton } from "@/components/InstallButton";
 import { LocationPicker } from "@/components/map/LocationPicker";
 import { PickupCard, type Pickup } from "@/components/map/PickupCard";
 import { btnPrimary, input, label, scrim, sheet } from "@/components/ui";
@@ -152,7 +151,6 @@ export function Shop({
         title={`Hi ${customerName.split(" ")[0]}`}
         subtitle="What would you like today?"
       >
-        <InstallButton className="mt-3 w-full justify-center" />
         {categories.length > 1 && (
           <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
             {[null, ...categories].map((c) => (

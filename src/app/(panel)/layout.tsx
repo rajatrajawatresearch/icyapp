@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import { requireAdminPage, isSuperAdmin } from "@/lib/auth";
+import { APP_NAME } from "@/lib/brand";
 import { PushPrompt } from "@/components/PushPrompt";
 import { Watermark } from "@/components/Watermark";
 import { AdminNav } from "./AdminNav";
+
+// Only the store's own panel can be installed as an app. Customers and
+// delivery partners use the app in the browser: their pages carry no
+// manifest, so no browser offers to install them.
+export const metadata: Metadata = {
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
+};
 
 /** Shared shell for /admin/* and /superadmin/* (login lives outside this group). */
 export default async function PanelLayout({

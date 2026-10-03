@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserRound } from "lucide-react";
-import { InstallButton } from "@/components/InstallButton";
 import { Brand } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -17,11 +16,11 @@ export function DeliveryHeader({ name }: { name: string }) {
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-2.5">
         <Brand sub={`${name}, delivery`} refresh />
         <div className="flex shrink-0 items-center gap-2">
-          {/* Room for this only on wider screens; phones get it on the account page. */}
-          <div className="hidden sm:block">
-            <InstallButton />
-          </div>
-          <NotificationBell endpoint="/api/notifications" href="/delivery" />
+          <NotificationBell
+            endpoint="/api/notifications"
+            href="/delivery"
+            installable={false}
+          />
           <ThemePicker />
           <Link
             href="/delivery/account"

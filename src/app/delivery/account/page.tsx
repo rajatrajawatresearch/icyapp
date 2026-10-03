@@ -3,7 +3,6 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { requireAdminPage } from "@/lib/auth";
 import { AccountPanel } from "@/components/AccountPanel";
-import { InstallButton } from "@/components/InstallButton";
 import { LogoutButton } from "@/components/LogoutButton";
 import { pageTitle } from "@/components/ui";
 
@@ -23,7 +22,6 @@ export default async function DeliveryAccountPage() {
       <h1 className={`${pageTitle} mt-3`}>My account</h1>
       <AccountPanel me={me} />
       <div className="mt-4 space-y-3">
-        <InstallButton className="w-full justify-center" />
         <LogoutButton className="w-full py-3" />
       </div>
     </div>

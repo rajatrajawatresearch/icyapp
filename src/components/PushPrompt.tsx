@@ -19,9 +19,16 @@ const LATER_MS = 3 * 24 * 60 * 60 * 1000;
 export function PushPrompt({
   audience,
   token,
+  installable = true,
   className = "",
 }: {
   audience: "staff" | "customer";
+  /**
+   * False where the app must stay in the browser (customers, delivery
+   * partners): an iPhone can't get alerts there, so it is not asked to
+   * install anything and the card stays hidden.
+   */
+  installable?: boolean;
   /** The customer's link token; staff are known by their session. */
   token?: string;
   className?: string;
@@ -45,6 +52,7 @@ export function PushPrompt({
   if (later || !state) return null;
   if (state === "on" || state === "unsupported" || state === "unavailable")
     return null;
+  if (state === "needs-install" && !installable) return null;
 
   async function turnOn() {
     setBusy(true);

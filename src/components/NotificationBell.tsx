@@ -29,11 +29,14 @@ export function NotificationBell({
   endpoint,
   href,
   pushToken,
+  installable = true,
   align = "right",
 }: {
   endpoint: string;
   href: string;
   pushToken?: string;
+  /** False where the app must stay in the browser (customers, delivery partners). */
+  installable?: boolean;
   align?: "left" | "right";
 }) {
   const [feed, setFeed] = useState<Feed | null>(null);
@@ -199,7 +202,7 @@ export function NotificationBell({
               ))}
             </ul>
           )}
-          <PushToggle token={pushToken} />
+          <PushToggle token={pushToken} installable={installable} />
         </div>
       )}
 
@@ -239,7 +242,13 @@ export function NotificationBell({
 }
 
 /** Opt this device in or out of push notifications (alerts with the app closed). */
-function PushToggle({ token }: { token?: string }) {
+function PushToggle({
+  token,
+  installable,
+}: {
+  token?: string;
+  installable: boolean;
+}) {
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -295,7 +304,9 @@ function PushToggle({ token }: { token?: string }) {
       )}
       {state === "needs-install" && (
         <p className="text-ink-2">
-          iPhone: Share, “Add to Home Screen”, then open the app from there.
+          {installable
+            ? "iPhone: Share, “Add to Home Screen”, then open the app from there."
+            : "Phone alerts don't work on iPhone here. The bell still rings in the app."}
         </p>
       )}
       {state === "unsupported" && (
