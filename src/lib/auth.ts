@@ -90,9 +90,15 @@ export const getSessionAdmin = cache(async (): Promise<SessionAdmin | null> => {
       role: true,
       isActive: true,
       sessionVersion: true,
+      scheduledDeleteAt: true,
     },
   });
-  if (!admin || !admin.isActive || admin.sessionVersion !== version)
+  if (
+    !admin ||
+    !admin.isActive ||
+    admin.scheduledDeleteAt ||
+    admin.sessionVersion !== version
+  )
     return null;
   return {
     id: admin.id,

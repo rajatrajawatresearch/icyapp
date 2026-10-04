@@ -26,6 +26,10 @@ export async function purgeExpired({ force = false } = {}) {
     prisma.order.deleteMany({ where: expired }),
     prisma.customer.deleteMany({ where: expired }),
     prisma.product.deleteMany({ where: expired }),
+    // A deleted account takes its sessions, links and alerts with it; what it
+    // did (orders, payments, audit entries) stays, without the link to it.
+    prisma.admin.deleteMany({ where: expired }),
+    prisma.auditLog.deleteMany({ where: expired }),
     prisma.notification.deleteMany({
       where: {
         createdAt: {

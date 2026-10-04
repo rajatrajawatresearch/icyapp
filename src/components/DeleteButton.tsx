@@ -72,6 +72,8 @@ export function DeleteButton({
               {entity === "customer" &&
                 " Their link stops working immediately; past orders are kept for your records."}
               {entity === "product" && " Past orders that include it are kept."}
+              {entity === "account" &&
+                " They are signed out at once. What they did stays in the audit log."}
             </p>
             <label className={`${labelCls} mt-4`} htmlFor={`delay-${id}`}>
               Delete in

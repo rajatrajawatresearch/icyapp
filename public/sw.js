@@ -43,7 +43,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     Promise.all([
       // The phone's own notification: it rings with the phone's sound.
-      self.registration.showNotification(data.title || "Bazzzar", {
+      self.registration.showNotification(data.title || "The Zone", {
         body: data.body || "",
         icon: "/icons/icon-192.png?v=5",
         badge: "/icons/badge-96.png?v=5",

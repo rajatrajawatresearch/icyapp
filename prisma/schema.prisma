@@ -78,6 +78,9 @@ model Admin {
   accessTokenAt     DateTime?
   /// Bumped to end every session of this account (link refreshed, password changed).
   sessionVersion    Int                @default(0)
+  /// Set while the account waits to be deleted (same safety window as other
+  /// rows): it cannot sign in, and is removed when the time passes.
+  scheduledDeleteAt DateTime?
   createdAt         DateTime           @default(now())
   notifications     Notification[]
   pushSubscriptions PushSubscription[]
@@ -90,8 +93,9 @@ model Admin {
 
 model Product {
   id                String      @id @default(cuid())
-  adminId           String
-  admin             Admin       @relation(fields: [adminId], references: [id])
+  /// Who added it. Null once that account has been deleted.
+  adminId           String?
+  admin             Admin?      @relation(fields: [adminId], references: [id], onDelete: SetNull)
   name              String
   price             Decimal     @db.Decimal(10, 2)
   /// Units left. Null = stock is not tracked, so the product never sells out.
@@ -195,14 +199,19 @@ model PaymentProof {
 }
 
 model AuditLog {
-  id           String   @id @default(cuid())
-  actorAdminId String
-  actor        Admin    @relation(fields: [actorAdminId], references: [id], onDelete: Cascade)
-  action       String
-  targetId     String
+  id                String    @id @default(cuid())
+  /// Null once the account that did this has been deleted; the log entry stays.
+  actorAdminId      String?
+  actor             Admin?    @relation(fields: [actorAdminId], references: [id], onDelete: SetNull)
+  /// Who it was, written down when their account is deleted.
+  actorName         String?
+  action            String
+  targetId          String
   /// Human-readable context, e.g. "customer Ravi (98xxxxxx)".
-  details      String?
-  createdAt    DateTime @default(now())
+  details           String?
+  /// Set by a data reset: hidden now, removed when the time passes.
+  scheduledDeleteAt DateTime?
+  createdAt         DateTime  @default(now())
 
   @@index([createdAt])
 }

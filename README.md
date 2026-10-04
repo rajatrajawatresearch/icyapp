@@ -1,4 +1,4 @@
-# Bazzzar
+# The Zone
 
 A mobile-first ordering app for one store and its known customers. Customers order through a private link (`/u/<token>`, no signup), pay by cash or a UPI QR the store uploads, and follow their order live. Store staff run everything from an admin panel; delivery partners get their own screen.
 
@@ -40,7 +40,8 @@ npx next dev -p 3210          # http://localhost:3210
 - **Screen privacy.** A website cannot block screenshots or screen recording; only a native app can. What the app does instead (`src/components/ScreenShield.tsx`, `Watermark.tsx`): covers itself when it is in the background or its window loses focus, when Print Screen or Cmd/Win+Shift is pressed, blocks printing and saving images, and tiles the viewer's name faintly over every screen so a screenshot shows who took it.
 - **Notifications.** Every order event creates a notification for the people who must act on it (store staff, the assigned rider, the customer) (`src/lib/notify.ts`, `src/lib/push.ts`, `public/sw.js`). On the phone it is a push notification with the phone's own sound, once that device has turned notifications on: every screen shows a "Turn on notifications" card until it has (`PushPrompt`). An iPhone must add the app to its Home Screen first. In the open app the bell rings (`src/lib/sound.ts`) and the notification shows across the top; a push passes straight to the open app, so it does not wait for the next poll.
 - **Sign-in links for staff.** A private link signs a staff member in without a password. Only its hash is stored, so it is shown once; refreshing it kills the old link and signs that account out everywhere (`src/lib/access-link.ts`). A super admin can refresh anyone's link, an admin only delivery partners'.
-- **Data reset** (Settings) clears orders, customers or products created in a chosen window (from the last 30 seconds up to all time) and deletes them after a chosen delay, from instantly (no undo) to 30 minutes.
+- **Data reset** (Settings) clears orders, customers, products, team accounts or the audit log created in a chosen window (from the last 30 seconds up to all time) and deletes them after a chosen delay, from instantly (no undo) to 30 minutes. Reports are computed from orders, so resetting orders resets them. The account doing the reset is never deleted.
+- **Deleting a staff account.** A super admin can delete any account but their own, from Settings → Team, with the same timer and undo as other deletes. While it waits, the account cannot sign in. What it did survives it: orders, payments and products lose the link to the account, and its audit entries keep its name (`AuditLog.actorName`).
 - **Deleting.** Super admin only. A delete is scheduled 1–30 minutes out; the row is hidden at once, can be undone until the timer ends, and is then purged lazily. Deleting a customer or product never destroys order history.
 - **Delivery charge.** The super admin sets a charge per delivery and, optionally, an order value from which delivery is free (Settings). The server works the charge out when the order is placed (`src/lib/pricing.ts`) and stores it on the order; it is part of the amount to pay. An admin can set a different charge on a single order while its payment is pending — the customer is notified and a UPI QR made for the old amount is removed.
 - **Live delivery tracking.** While a delivery partner has an order out for delivery, their delivery screen sends the phone's position (`LocationSharing`, `POST /api/delivery/location`); outside a delivery the server stores nothing. Admins and the super admin see every partner on a map under Delivery team → Live tracking: where they are, the route over the last 12 hours, each stop with its length, and the time waited at the customer's pin (`src/lib/tracking.ts`). A web page can only report while it is open on the screen, so the screen is kept awake and time without pings is shown as "no signal", not as a stop. Pings are kept for 3 days.
@@ -64,7 +65,7 @@ Pushing to `main` deploys. The build runs `vercel-build`: `prisma generate`, `pr
 
 ## Schema notes (additions beyond the brief)
 
-- `Admin.isActive`, `Admin.sessionVersion`, `Admin.accessTokenHash`: deactivation, ending sessions, private sign-in links.
+- `Admin.isActive`, `Admin.sessionVersion`, `Admin.accessTokenHash`, `Admin.scheduledDeleteAt`: deactivation, ending sessions, private sign-in links, deletion with undo.
 - `Order.number`: a short reference (`#12`) people can read aloud.
 - `Order.customerName/Phone`, `OrderItem.productName`: history survives when a customer or product is deleted.
 - `Order.deliveryLat/Lng`, `deliveryPartnerId`, `deliveredAt`, `receivedAt`, `deliveryFee`: delivery pin, assignment, hand-over, the customer's confirmation and the delivery charge.

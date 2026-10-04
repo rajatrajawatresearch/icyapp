@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   const since = new Date(Date.now() - WINDOW_MS);
 
   const riders = await prisma.admin.findMany({
-    where: { role: "DELIVERY", isActive: true },
+    where: { role: "DELIVERY", isActive: true, scheduledDeleteAt: null },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });

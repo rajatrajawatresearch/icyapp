@@ -39,6 +39,16 @@ export async function setScheduledDelete(
       });
       return `customer ${c?.name} (${c?.phone})`;
     }
+    case "account": {
+      const { count } = await prisma.admin.updateMany({ where, data });
+      if (!count) return null;
+      const a = await prisma.admin.findUnique({
+        where: { id },
+        select: { name: true, email: true },
+      });
+      if (a && t.to) await keepActorName(id, a);
+      return `account ${a?.name} (${a?.email})`;
+    }
     case "order": {
       const { count } = await prisma.order.updateMany({ where, data });
       if (!count) return null;
@@ -49,4 +59,18 @@ export async function setScheduledDelete(
       return `order #${o?.number}`;
     }
   }
+}
+
+/**
+ * A deleted account's past actions stay in the audit log, but the row that
+ * named the person will be gone. Write the name onto those entries now.
+ */
+export async function keepActorName(
+  adminId: string,
+  account: { name: string; email: string },
+) {
+  await prisma.auditLog.updateMany({
+    where: { actorAdminId: adminId },
+    data: { actorName: `${account.name} (${account.email})` },
+  });
 }

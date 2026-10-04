@@ -23,6 +23,8 @@ export async function POST(req: Request) {
   if (!admin || !valid) return jsonError("Wrong email or password", 401);
   if (!admin.isActive)
     return jsonError("This account has been deactivated", 403);
+  if (admin.scheduledDeleteAt)
+    return jsonError("This account has been removed", 403);
 
   const res = NextResponse.json({ role: admin.role, name: admin.name });
   await setSessionCookie(res, admin);

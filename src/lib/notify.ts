@@ -67,7 +67,11 @@ async function safely(send: () => Promise<void>) {
 export function notifyStore(n: NotificationInput) {
   return safely(async () => {
     const staff = await prisma.admin.findMany({
-      where: { isActive: true, role: { in: ["ADMIN", "SUPER_ADMIN"] } },
+      where: {
+        isActive: true,
+        scheduledDeleteAt: null,
+        role: { in: ["ADMIN", "SUPER_ADMIN"] },
+      },
       select: { id: true },
     });
     await deliver({ adminIds: staff.map((s) => s.id) }, n);

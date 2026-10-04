@@ -21,6 +21,7 @@ function actionStyle(action: string) {
 export default async function AuditLogPage() {
   await requireAdminPage({ superOnly: true });
   const rows = await prisma.auditLog.findMany({
+    where: { scheduledDeleteAt: null },
     orderBy: { createdAt: "desc" },
     take: PAGE_SIZE,
     include: { actor: { select: { name: true, email: true } } },
@@ -48,9 +49,9 @@ export default async function AuditLogPage() {
               </span>
               <span
                 className="w-40 shrink-0 truncate text-sm font-medium text-ink"
-                title={r.actor.email}
+                title={r.actor?.email ?? "This account has been deleted"}
               >
-                {r.actor.name}
+                {r.actor?.name ?? r.actorName ?? "Deleted account"}
               </span>
               <span
                 className={`w-fit shrink-0 rounded-full px-2 py-0.5 font-mono text-xs ${actionStyle(r.action)}`}

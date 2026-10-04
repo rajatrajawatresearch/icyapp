@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import { RESET_DELAY_SECONDS, type TrashEntity } from "@/lib/constants";
+import { RESET_DELAY_SECONDS, type ResetEntity } from "@/lib/constants";
 import { api, errorMessage } from "@/lib/client-api";
 import { countdown } from "@/lib/format";
 import { useNow } from "@/components/useNow";
@@ -10,8 +10,8 @@ import { btnSecondary, card, field, input, label } from "@/components/ui";
 
 type Unit = "seconds" | "minutes" | "hours" | "days";
 type Range = { amount: number; unit: Unit } | null;
-type Counts = Record<TrashEntity, number>;
-type Ids = Record<TrashEntity, string[]>;
+type Counts = Record<ResetEntity, number>;
+type Ids = Record<ResetEntity, string[]>;
 
 const PRESETS: { label: string; range: Range }[] = [
   { label: "Last 30 seconds", range: { amount: 30, unit: "seconds" } },
@@ -36,14 +36,22 @@ const delayLabel = (sec: number) =>
       ? `${sec} seconds`
       : `${sec / 60} minute${sec === 60 ? "" : "s"}`;
 
-const ENTITIES: { id: TrashEntity; label: string }[] = [
+const ENTITIES: { id: ResetEntity; label: string }[] = [
   { id: "order", label: "Orders" },
   { id: "customer", label: "Customers" },
   { id: "product", label: "Products" },
+  { id: "account", label: "Team accounts" },
+  { id: "audit", label: "Audit log" },
 ];
 
+/** "3 orders, 1 customer": only what was actually touched. */
+const summary = (counts: Counts) =>
+  ENTITIES.filter((e) => counts[e.id] > 0)
+    .map((e) => `${counts[e.id]} ${e.label.toLowerCase()}`)
+    .join(", ");
+
 export function ResetClient() {
-  const [entities, setEntities] = useState<TrashEntity[]>(["order"]);
+  const [entities, setEntities] = useState<ResetEntity[]>(["order"]);
   const [preset, setPreset] = useState<number | "custom">(DEFAULT_PRESET);
   const [custom, setCustom] = useState<{ amount: string; unit: Unit }>({
     amount: "30",
@@ -143,15 +151,13 @@ export function ResetClient() {
     <div className="mt-5 space-y-4">
       {done && new Date(done.at).getTime() <= now && (
         <p className="rounded-2xl border border-success-line bg-success-soft p-4 text-sm font-semibold text-success-ink">
-          Deleted: {done.counts.order} orders, {done.counts.customer} customers,{" "}
-          {done.counts.product} products.
+          Deleted: {summary(done.counts)}.
         </p>
       )}
       {done && new Date(done.at).getTime() > now && (
         <div className="rounded-2xl border border-danger-line bg-danger-soft p-4">
           <p className="font-semibold text-danger-ink">
-            Reset scheduled — {done.counts.order} orders, {done.counts.customer}{" "}
-            customers, {done.counts.product} products
+            Reset scheduled: {summary(done.counts)}
           </p>
           <p className="mt-1 text-sm text-danger-ink">
             Hidden now, permanently deleted in{" "}
@@ -258,6 +264,17 @@ export function ResetClient() {
             <span className="block text-xs text-ink-3">
               Customers&apos; links stop working; their past orders are kept
               unless you also reset Orders.
+            </span>
+          )}
+          {entities.includes("order") && (
+            <span className="block text-xs text-ink-3">
+              Reports are built from orders, so they are cleared with them.
+            </span>
+          )}
+          {entities.includes("account") && (
+            <span className="block text-xs text-ink-3">
+              Team accounts: admins and delivery partners, signed out at once.
+              Your own account is never deleted.
             </span>
           )}
         </div>

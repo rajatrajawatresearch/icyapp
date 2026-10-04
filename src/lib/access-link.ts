@@ -46,5 +46,5 @@ export async function resolveAccessLink(token: string) {
   const admin = await prisma.admin.findUnique({
     where: { accessTokenHash: sha256(token) },
   });
-  return admin?.isActive ? admin : null;
+  return admin?.isActive && !admin.scheduledDeleteAt ? admin : null;
 }

@@ -11,8 +11,9 @@ export default async function ResetPage() {
     <div className="max-w-xl">
       <h1 className={pageTitle}>Data reset</h1>
       <p className="mt-1 text-sm text-ink-3">
-        Clear test or wrong data created in a time window. Admin accounts,
-        settings and the audit log are never touched.
+        Clear data created in a time window: orders (and with them the
+        reports), customers, products, team accounts and the audit log. Store
+        settings and your own account are never touched.
       </p>
       <ResetClient />
     </div>

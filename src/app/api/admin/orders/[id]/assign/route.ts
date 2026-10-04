@@ -35,7 +35,12 @@ export async function POST(
   let partnerName = "nobody";
   if (deliveryPartnerId) {
     const partner = await prisma.admin.findFirst({
-      where: { id: deliveryPartnerId, role: "DELIVERY", isActive: true },
+      where: {
+        id: deliveryPartnerId,
+        role: "DELIVERY",
+        isActive: true,
+        scheduledDeleteAt: null,
+      },
     });
     if (!partner)
       return jsonError("That delivery partner isn't available", 404);

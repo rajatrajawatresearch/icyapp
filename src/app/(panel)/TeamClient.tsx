@@ -8,6 +8,8 @@ import { formatDateTime } from "@/lib/format";
 import { LINK_ORIGIN } from "@/lib/link-origin";
 import { AccessLink } from "@/components/AccessLink";
 import { confirmDialog } from "@/components/ConfirmDialog";
+import { DeleteButton } from "@/components/DeleteButton";
+import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { ListSkeleton } from "@/components/Skeleton";
 import {
   btnPrimary,
@@ -52,11 +54,16 @@ export function TeamClient({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  /** Accounts waiting to be deleted: still undoable. */
+  const [trash, setTrash] = useState<AdminDTO[]>([]);
 
   const load = useCallback(async () => {
     try {
-      const { items } = await api<{ items: AdminDTO[] }>("/api/admin/team");
+      const { items, trash } = await api<{ items: AdminDTO[]; trash: AdminDTO[] }>(
+        "/api/admin/team",
+      );
       setItems(manage ? items : items.filter((a) => a.role === "DELIVERY"));
+      setTrash(manage ? trash : []);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -240,9 +247,17 @@ export function TeamClient({
                   </p>
                 </div>
                 {manage && a.id !== myId && (
-                  <button type="button" className={btnSecondary} onClick={() => toggle(a)}>
-                    {a.isActive ? "Deactivate" : "Reactivate"}
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className={btnSecondary} onClick={() => toggle(a)}>
+                      {a.isActive ? "Deactivate" : "Reactivate"}
+                    </button>
+                    <DeleteButton
+                      entity="account"
+                      id={a.id}
+                      name={`${a.name} (${ROLE_LABEL[a.role]})`}
+                      onScheduled={load}
+                    />
+                  </div>
                 )}
               </div>
               {a.isActive && (
@@ -256,6 +271,18 @@ export function TeamClient({
             </li>
           ))}
         </ul>
+      )}
+
+      {manage && (
+        <RecentlyDeleted
+          entity="account"
+          rows={trash.map((a) => ({
+            id: a.id,
+            label: `${a.name}, ${ROLE_LABEL[a.role]}, ${a.email}`,
+            scheduledDeleteAt: a.scheduledDeleteAt,
+          }))}
+          onChange={load}
+        />
       )}
     </div>
   );

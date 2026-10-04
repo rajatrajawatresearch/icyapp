@@ -25,6 +25,8 @@ export async function POST(req: Request) {
   const body = await parseJson(req, ScheduleSchema);
   if (!body.ok) return body.res;
   const { entity, id, minutes } = body.data;
+  if (entity === "account" && id === auth.admin.id)
+    return jsonError("You can't delete your own account");
 
   const deleteAt = new Date(Date.now() + minutes * 60_000);
   const label = await setScheduledDelete(entity, id, {

@@ -6,8 +6,13 @@ export const DEFAULT_DELETE_DELAY = 5;
 /** Data reset: seconds before the rows are deleted for good (0 = at once, no undo). */
 export const RESET_DELAY_SECONDS = [0, 30, 60, 120, 300, 600, 1800] as const;
 
-export const TRASH_ENTITIES = ["product", "customer", "order"] as const;
+// "account" is a staff account: an admin, a super admin or a delivery partner.
+export const TRASH_ENTITIES = ["product", "customer", "order", "account"] as const;
 export type TrashEntity = (typeof TRASH_ENTITIES)[number];
+
+/** What a data reset can clear: everything above, plus the audit log. */
+export const RESET_ENTITIES = [...TRASH_ENTITIES, "audit"] as const;
+export type ResetEntity = (typeof RESET_ENTITIES)[number];
 
 export const POLL_INTERVAL_MS = 6000;
 
