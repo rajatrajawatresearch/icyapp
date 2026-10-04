@@ -21,24 +21,28 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemePicker } from "@/components/ThemePicker";
 import { APP_NAME } from "@/lib/brand";
+import type { ModuleId } from "@/lib/modules";
 
 type NavLink = {
   href: string;
   label: string;
   Icon: LucideIcon;
+  /** The section this entry belongs to; an admin sees it only when they have it. */
+  module?: ModuleId;
   /** Other pages of the same section (reached by its tabs) that keep this item lit. */
   also?: string[];
 };
 
 const STORE_LINKS: NavLink[] = [
-  { href: "/admin/orders", label: "Orders", Icon: ClipboardList },
-  { href: "/admin/products", label: "Products", Icon: Package },
-  { href: "/admin/customers", label: "Customers", Icon: Users },
+  { href: "/admin/orders", label: "Orders", Icon: ClipboardList, module: "orders" },
+  { href: "/admin/products", label: "Products", Icon: Package, module: "products" },
+  { href: "/admin/customers", label: "Customers", Icon: Users, module: "customers" },
   // Also holds live tracking of deliveries.
   {
     href: "/admin/riders",
     label: "Delivery team",
     Icon: Bike,
+    module: "delivery",
     also: ["/admin/tracking"],
   },
   // For the super admin this section also holds the audit log.
@@ -46,6 +50,7 @@ const STORE_LINKS: NavLink[] = [
     href: "/admin/reports",
     label: "Reports",
     Icon: ChartLine,
+    module: "reports",
     also: ["/superadmin/audit-log"],
   },
 ];
@@ -68,7 +73,16 @@ function useIsDesktop() {
 }
 
 /** Admin navigation: a fixed sidebar on desktop, a slide-in drawer on phones. */
-export function AdminNav({ name, isSuper }: { name: string; isSuper: boolean }) {
+export function AdminNav({
+  name,
+  isSuper,
+  modules,
+}: {
+  name: string;
+  isSuper: boolean;
+  /** The sections an admin may use; ignored for a super admin, who has all. */
+  modules: string[];
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const desktop = useIsDesktop();
@@ -158,7 +172,9 @@ export function AdminNav({ name, isSuper }: { name: string; isSuper: boolean }) 
         {desktop && <div className="px-4 pb-3">{tools("left")}</div>}
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-          {STORE_LINKS.map(item)}
+          {STORE_LINKS.filter(
+            (l) => isSuper || !l.module || modules.includes(l.module),
+          ).map(item)}
           {isSuper && OWNER_LINKS.map(item)}
         </nav>
 

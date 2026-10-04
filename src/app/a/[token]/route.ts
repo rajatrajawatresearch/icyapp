@@ -16,7 +16,7 @@ export async function GET(
 
   const res = NextResponse.redirect(
     new URL(
-      admin ? homePathFor(admin.role) : "/admin/login?link=invalid",
+      admin ? homePathFor(admin) : "/admin/login?link=invalid",
       req.url,
     ),
   );

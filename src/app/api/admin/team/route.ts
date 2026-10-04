@@ -10,7 +10,7 @@ import { purgeExpired } from "@/lib/purge";
  * accounts waiting to be deleted (super admin only), so they can be undone.
  */
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "delivery" });
   if (!auth.ok) return auth.res;
   await purgeExpired();
   const superAdmin = isSuperAdmin(auth.admin);

@@ -83,6 +83,8 @@ export type AdminDTO = {
   /** When their private sign-in link was last issued (null = no link). The link itself is never sent. */
   accessLinkAt: string | null;
   scheduledDeleteAt: string | null;
+  /** For admins: the sections they may use. */
+  modules: string[];
 };
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -191,5 +193,6 @@ export function toAdminDTO(a: Prisma.AdminGetPayload<object>): AdminDTO {
     createdAt: a.createdAt.toISOString(),
     accessLinkAt: a.accessTokenHash ? iso(a.accessTokenAt) : null,
     scheduledDeleteAt: iso(a.scheduledDeleteAt),
+    modules: a.modules,
   };
 }

@@ -7,6 +7,7 @@ import type { AdminDTO } from "@/lib/dto";
 import { api, copyText, errorMessage } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/format";
 import { LINK_ORIGIN } from "@/lib/link-origin";
+import { MODULES, type ModuleId } from "@/lib/modules";
 import { AccessLink } from "@/components/AccessLink";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -88,6 +89,20 @@ export function TeamClient({
       setError(errorMessage(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** Switch one section on or off for an admin; it applies on their next tap. */
+  async function setModule(a: AdminDTO, id: ModuleId) {
+    const modules = a.modules.includes(id)
+      ? a.modules.filter((m) => m !== id)
+      : [...a.modules, id];
+    setItems((prev) => prev?.map((x) => (x.id === a.id ? { ...x, modules } : x)) ?? null);
+    try {
+      await api(`/api/superadmin/admins/${a.id}`, { method: "PATCH", json: { modules } });
+    } catch (err) {
+      setError(errorMessage(err));
+      await load();
     }
   }
 
@@ -268,6 +283,31 @@ export function TeamClient({
                   </div>
                 )}
               </div>
+              {manage && a.role === "ADMIN" && (
+                <div>
+                  <p className="text-xs font-semibold text-ink-3">Can use</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {MODULES.map((m) => {
+                      const on = a.modules.includes(m.id);
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => setModule(a, m.id)}
+                          className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
+                            on
+                              ? "border-brand-600 bg-brand-600 text-on-solid"
+                              : "border-line-strong bg-surface text-ink-3"
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {a.isActive && (
                 <AccessLink
                   endpoint={`/api/admin/team/${a.id}/access-link`}

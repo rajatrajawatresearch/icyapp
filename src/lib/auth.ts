@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import type { Role } from "@prisma/client";
 import { prisma } from "./db";
+import { canUse, homePathFor, type ModuleId } from "./modules";
+
+export { homePathFor };
 
 export const SESSION_COOKIE = "mm_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -14,6 +17,8 @@ export type SessionAdmin = {
   name: string;
   email: string;
   role: Role;
+  /** Sections an admin may use (lib/modules.ts); a super admin has them all. */
+  modules: string[];
 };
 
 function secretKey() {
@@ -91,6 +96,7 @@ export const getSessionAdmin = cache(async (): Promise<SessionAdmin | null> => {
       isActive: true,
       sessionVersion: true,
       scheduledDeleteAt: true,
+      modules: true,
     },
   });
   if (
@@ -105,6 +111,7 @@ export const getSessionAdmin = cache(async (): Promise<SessionAdmin | null> => {
     name: admin.name,
     email: admin.email,
     role: admin.role,
+    modules: admin.modules,
   };
 });
 
@@ -116,11 +123,6 @@ export function isDelivery(admin: { role: Role }) {
   return admin.role === "DELIVERY";
 }
 
-/** Where each role lands after signing in. */
-export function homePathFor(role: Role) {
-  return role === "DELIVERY" ? "/delivery" : "/admin/orders";
-}
-
 type Access = {
   /** Only SUPER_ADMIN. */
   superOnly?: boolean;
@@ -128,13 +130,15 @@ type Access = {
   allowDelivery?: boolean;
   /** Only delivery partners (the /delivery panel). */
   deliveryOnly?: boolean;
+  /** A section of the panel: an admin needs it switched on by a super admin. */
+  module?: ModuleId;
 };
 
 function denial(
   admin: SessionAdmin,
   opts?: Access,
 ): { status: 403; error: string; home: string } | null {
-  const home = homePathFor(admin.role);
+  const home = homePathFor(admin);
   if (opts?.deliveryOnly)
     return isDelivery(admin)
       ? null
@@ -143,6 +147,8 @@ function denial(
     return { status: 403, error: "Store staff only", home };
   if (opts?.superOnly && !isSuperAdmin(admin))
     return { status: 403, error: "Super admin only", home };
+  if (opts?.module && !canUse(admin, opts.module))
+    return { status: 403, error: "You don't have access to this section", home };
   return null;
 }
 

@@ -22,7 +22,7 @@ const MAX_PATH_POINTS = 400;
  * partners and customers never see this.
  */
 export async function GET(req: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "delivery" });
   if (!auth.ok) return auth.res;
   const since = new Date(Date.now() - WINDOW_MS);
 

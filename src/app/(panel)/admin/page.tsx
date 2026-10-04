@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import { homePathFor, requireAdminPage } from "@/lib/auth";
 
-export default function AdminIndex() {
-  redirect("/admin/orders");
+/** /admin: each person's first section. */
+export default async function AdminIndex() {
+  redirect(homePathFor(await requireAdminPage()));
 }

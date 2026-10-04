@@ -4,7 +4,7 @@ import { useState } from "react";
 import { APP_NAME, ICONS } from "@/lib/brand";
 
 /**
- * The diamond mark. One SVG (public/brand/icon.svg) is the source for every
+ * The mark: a location pin holding a diamond. One SVG (public/brand/icon.svg) is the source for every
  * size. With `refresh`, tapping it reloads the app, the way pulling down does
  * in a native one.
  */

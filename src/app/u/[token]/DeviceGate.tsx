@@ -75,6 +75,13 @@ export function DeviceGate({
         </button>
       )}
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
+      <p className="mt-5 text-xs text-ink-3">
+        {locked ? "See the " : "By continuing you agree to the "}
+        <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold underline">
+          terms and conditions
+        </a>
+        .
+      </p>
     </main>
   );
 }

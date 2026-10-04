@@ -38,7 +38,7 @@ export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "delivery" });
   if (!auth.ok) return auth.res;
   const { id } = await params;
   const found = await manageableAccount(auth.admin, id);
@@ -65,7 +65,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "delivery" });
   if (!auth.ok) return auth.res;
   const { id } = await params;
   const found = await manageableAccount(auth.admin, id);

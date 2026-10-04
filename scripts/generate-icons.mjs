@@ -26,13 +26,15 @@ await png(fullBleed(0.78), 512).toFile("public/icons/maskable-512.png");
 await png(fullBleed(0.9), 180).toFile("public/icons/apple-touch-icon.png");
 await png(svg, 48).toFile("public/icons/favicon-48.png");
 
-// Monochrome badge for Android's notification tray: white diamond on transparent.
+// Monochrome badge for Android's notification tray: a white location pin
+// holding a diamond, on transparent.
 const badge = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
   <g fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M30 18H66L86 40 48 82 10 40Z"/><path d="M10 40H86M30 18 38 40 48 18 58 40 66 18M38 40 48 82 58 40"/>
+    <path d="M48 90C48 90 16 60 16 38a32 32 0 1 1 64 0C80 60 48 90 48 90Z"/>
+    <path d="M38 30h20l7 8-17 18-17-18Z"/>
   </g></svg>`;
 await png(badge, 96).toFile("public/icons/badge-96.png");
-// The diamond without its tile, for the panel on the login screen.
+// The mark without its tile, for the panel on the login screen.
 const cube = svg.replace(/\s*<rect[^>]*\/>/g, "");
 await writeFile("public/brand/cube.svg", cube);
 

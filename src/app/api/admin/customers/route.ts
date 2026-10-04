@@ -14,7 +14,7 @@ import {
 } from "@/lib/phone";
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "customers" });
   if (!auth.ok) return auth.res;
   await purgeExpired();
 
@@ -49,7 +49,7 @@ const CreateCustomerSchema = z.object({
 
 /** POST /api/admin/customers — add a customer and generate their private link token. */
 export async function POST(req: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "customers" });
   if (!auth.ok) return auth.res;
   const body = await parseJson(req, CreateCustomerSchema);
   if (!body.ok) return body.res;

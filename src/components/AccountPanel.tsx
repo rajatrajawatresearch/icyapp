@@ -40,6 +40,11 @@ export async function AccountPanel({ me }: { me: SessionAdmin }) {
       </section>
 
       <ChangePasswordForm />
+      <p className="mt-4 text-xs text-ink-3">
+        <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold underline">
+          Terms and conditions
+        </a>
+      </p>
     </>
   );
 }

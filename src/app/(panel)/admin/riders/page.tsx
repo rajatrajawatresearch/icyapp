@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Delivery team" };
 
 /** Admins can't manage accounts, but they can re-issue a rider's sign-in link. */
 export default async function RidersPage() {
-  const me = await requireAdminPage();
+  const me = await requireAdminPage({ module: "delivery" });
   return (
     <>
       <SectionTabs section="delivery" />

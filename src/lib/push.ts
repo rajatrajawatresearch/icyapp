@@ -81,7 +81,7 @@ export async function sendPush(to: PushRecipients, message: PushMessage) {
   const subs = await prisma.pushSubscription.findMany({
     where: { OR: owners },
     include: {
-      admin: { select: { role: true } },
+      admin: { select: { role: true, modules: true } },
       customer: { select: { token: true } },
     },
   });
@@ -92,7 +92,7 @@ export async function sendPush(to: PushRecipients, message: PushMessage) {
     subs.map(async (s) => {
       // Tapping the notification opens that person's own screen.
       const url = s.admin
-        ? homePathFor(s.admin.role)
+        ? homePathFor(s.admin)
         : `/u/${s.customer!.token}/orders`;
       try {
         // Checked again at send time: never connect anywhere but a push service.

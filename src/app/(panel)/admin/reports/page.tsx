@@ -26,7 +26,7 @@ async function paidTotal(method: "CASH" | "UPI", since?: Date) {
 }
 
 export default async function ReportsPage() {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage({ module: "reports" });
   await purgeExpired();
   const today = startOfStoreDay();
   const superView = isSuperAdmin(admin);

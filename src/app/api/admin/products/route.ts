@@ -9,7 +9,7 @@ import { toProductDTO } from "@/lib/dto";
 import { parseProductForm } from "./form";
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "products" });
   if (!auth.ok) return auth.res;
   await purgeExpired();
 
@@ -30,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "products" });
   if (!auth.ok) return auth.res;
 
   try {

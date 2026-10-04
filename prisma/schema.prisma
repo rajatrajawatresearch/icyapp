@@ -78,6 +78,9 @@ model Admin {
   accessTokenAt     DateTime?
   /// Bumped to end every session of this account (link refreshed, password changed).
   sessionVersion    Int                @default(0)
+  /// For role ADMIN: the sections of the panel this person may use, chosen by
+  /// a super admin (lib/modules.ts). Super admins always have everything.
+  modules           String[]           @default(["orders", "products", "customers", "delivery"])
   /// Set while the account waits to be deleted (same safety window as other
   /// rows): it cannot sign in, and is removed when the time passes.
   scheduledDeleteAt DateTime?

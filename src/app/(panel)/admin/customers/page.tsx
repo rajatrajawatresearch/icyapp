@@ -5,6 +5,6 @@ import { CustomersClient } from "./CustomersClient";
 export const metadata: Metadata = { title: "Customers" };
 
 export default async function CustomersPage() {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage({ module: "customers" });
   return <CustomersClient isSuper={isSuperAdmin(admin)} />;
 }

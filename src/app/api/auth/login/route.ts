@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { jsonError, parseJson } from "@/lib/api";
-import { setSessionCookie } from "@/lib/auth";
+import { homePathFor, setSessionCookie } from "@/lib/auth";
 
 const LoginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -26,7 +26,11 @@ export async function POST(req: Request) {
   if (admin.scheduledDeleteAt)
     return jsonError("This account has been removed", 403);
 
-  const res = NextResponse.json({ role: admin.role, name: admin.name });
+  const res = NextResponse.json({
+    role: admin.role,
+    name: admin.name,
+    home: homePathFor(admin),
+  });
   await setSessionCookie(res, admin);
   return res;
 }

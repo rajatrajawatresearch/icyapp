@@ -13,7 +13,7 @@ export default async function LoginPage({
   searchParams: Promise<{ link?: string }>;
 }) {
   const admin = await getSessionAdmin();
-  if (admin) redirect(homePathFor(admin.role));
+  if (admin) redirect(homePathFor(admin));
   const { link } = await searchParams;
 
   return (

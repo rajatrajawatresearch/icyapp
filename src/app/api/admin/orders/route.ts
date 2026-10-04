@@ -6,7 +6,7 @@ import { orderInclude, toOrderDTO } from "@/lib/dto";
 
 /** GET /api/admin/orders — polled every 6s by the admin orders page. */
 export async function GET(req: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "orders" });
   if (!auth.ok) return auth.res;
   await purgeExpired();
 

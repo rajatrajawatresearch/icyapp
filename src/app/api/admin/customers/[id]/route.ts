@@ -13,7 +13,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi({ module: "customers" });
   if (!auth.ok) return auth.res;
   const { id } = await params;
   const body = await parseJson(req, UpdateCustomerSchema);

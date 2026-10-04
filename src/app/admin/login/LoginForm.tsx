@@ -19,11 +19,11 @@ export function LoginForm({ linkInvalid }: { linkInvalid: boolean }) {
     setBusy(true);
     setError(null);
     try {
-      const { role } = await api<{ role: string }>("/api/auth/login", {
+      const { home } = await api<{ home: string }>("/api/auth/login", {
         method: "POST",
         json: { email, password },
       });
-      router.replace(role === "DELIVERY" ? "/delivery" : "/admin/orders");
+      router.replace(home);
       router.refresh();
     } catch (err) {
       setError(errorMessage(err));
@@ -94,6 +94,13 @@ export function LoginForm({ linkInvalid }: { linkInvalid: boolean }) {
       </button>
       <p className="text-center text-sm text-ink-3">
         Got a sign-in link from the store? Just open it.
+      </p>
+      <p className="text-center text-xs text-ink-3">
+        By signing in you agree to the{" "}
+        <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold underline">
+          terms and conditions
+        </a>
+        .
       </p>
     </form>
   );
