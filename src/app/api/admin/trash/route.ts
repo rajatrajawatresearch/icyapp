@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { prisma } from "@/lib/db";
 import { requireAdminApi } from "@/lib/auth";
 import { jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
@@ -54,4 +55,29 @@ export async function POST(req: Request) {
     ok: true,
     scheduledDeleteAt: deleteAt.toISOString(),
   });
+}
+
+/**
+ * GET /api/admin/trash — everything waiting to be deleted, of every kind, so
+ * one screen (Settings → Delete) can undo any of it.
+ */
+export async function GET() {
+  const auth = await requireAdminApi({ superOnly: true });
+  if (!auth.ok) return auth.res;
+  await purgeExpired();
+  const where = { scheduledDeleteAt: { gt: new Date() } };
+  const [orders, customers, products, accounts] = await Promise.all([
+    prisma.order.findMany({ where, select: { id: true, number: true, customerName: true, scheduledDeleteAt: true } }),
+    prisma.customer.findMany({ where, select: { id: true, name: true, phone: true, scheduledDeleteAt: true } }),
+    prisma.product.findMany({ where, select: { id: true, name: true, scheduledDeleteAt: true } }),
+    prisma.admin.findMany({ where, select: { id: true, name: true, email: true, scheduledDeleteAt: true } }),
+  ]);
+  const at = (d: Date | null) => d!.toISOString();
+  const items = [
+    ...orders.map((o) => ({ entity: "order" as const, id: o.id, label: `Order #${o.number}, ${o.customerName}`, scheduledDeleteAt: at(o.scheduledDeleteAt) })),
+    ...customers.map((c) => ({ entity: "customer" as const, id: c.id, label: `Customer ${c.name}, ${c.phone}`, scheduledDeleteAt: at(c.scheduledDeleteAt) })),
+    ...products.map((p) => ({ entity: "product" as const, id: p.id, label: `Product ${p.name}`, scheduledDeleteAt: at(p.scheduledDeleteAt) })),
+    ...accounts.map((a) => ({ entity: "account" as const, id: a.id, label: `Account ${a.name}, ${a.email}`, scheduledDeleteAt: at(a.scheduledDeleteAt) })),
+  ].sort((a, b) => a.scheduledDeleteAt.localeCompare(b.scheduledDeleteAt));
+  return NextResponse.json({ items });
 }

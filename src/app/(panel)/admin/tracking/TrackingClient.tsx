@@ -9,7 +9,7 @@ import { formatDuration, type RiderTrack } from "@/lib/tracking";
 import { TrackingMap } from "@/components/map/TrackingMap";
 import { ListSkeleton } from "@/components/Skeleton";
 import { useNow } from "@/components/useNow";
-import { btnSecondary, card, emptyState, pageLead, pageTitle, pill } from "@/components/ui";
+import { btnSecondary, card, emptyState, pageTitle, pill } from "@/components/ui";
 
 const REFRESH_MS = 10_000;
 /** A partner whose last position is newer than this is "live". */
@@ -49,9 +49,6 @@ export function TrackingClient() {
   return (
     <div>
       <h1 className={pageTitle}>Live tracking</h1>
-      <p className={pageLead}>
-        Shows a partner while their delivery screen is open on their phone.
-      </p>
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
       {riders === null ? (

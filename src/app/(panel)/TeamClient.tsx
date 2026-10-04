@@ -11,7 +11,6 @@ import { MODULES, type ModuleId } from "@/lib/modules";
 import { AccessLink } from "@/components/AccessLink";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { DeleteButton } from "@/components/DeleteButton";
-import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { ListSkeleton } from "@/components/Skeleton";
 import {
   btnDanger,
@@ -57,16 +56,11 @@ export function TeamClient({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  /** Accounts waiting to be deleted: still undoable. */
-  const [trash, setTrash] = useState<AdminDTO[]>([]);
 
   const load = useCallback(async () => {
     try {
-      const { items, trash } = await api<{ items: AdminDTO[]; trash: AdminDTO[] }>(
-        "/api/admin/team",
-      );
+      const { items } = await api<{ items: AdminDTO[] }>("/api/admin/team");
       setItems(manage ? items : items.filter((a) => a.role === "DELIVERY"));
-      setTrash(manage ? trash : []);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -133,8 +127,8 @@ export function TeamClient({
       <h1 className={pageTitle}>{manage ? "Team" : "Delivery team"}</h1>
       <p className={pageLead}>
         {manage
-          ? "Everyone who can sign in. Give each person their own sign-in link, or an email and password."
-          : "Your delivery partners. Send each one their own sign-in link; refresh it if a phone is lost."}
+          ? "People who can sign in."
+          : "Your delivery partners."}
       </p>
 
       {manage && (
@@ -321,17 +315,6 @@ export function TeamClient({
         </ul>
       )}
 
-      {manage && (
-        <RecentlyDeleted
-          entity="account"
-          rows={trash.map((a) => ({
-            id: a.id,
-            label: `${a.name}, ${ROLE_LABEL[a.role]}, ${a.email}`,
-            scheduledDeleteAt: a.scheduledDeleteAt,
-          }))}
-          onChange={load}
-        />
-      )}
     </div>
   );
 }

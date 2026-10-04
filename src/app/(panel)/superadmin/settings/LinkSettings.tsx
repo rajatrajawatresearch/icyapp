@@ -39,19 +39,13 @@ export function LinkSettings({ initial }: { initial: number | null }) {
 
   const summary =
     closeAfterSec === null
-      ? "A customer keeps using the same link for every order."
-      : `When a customer's order is completed and paid${
-          closeAfterSec === 0 ? "" : ", and this time has passed"
-        }, their link stops opening and shows "This link doesn't work any more". The customer and their orders are kept. For the next order, press Restore or Regenerate on the Customers screen.`;
+      ? "Links stay open."
+      : "The link stops working after the order is done. Reopen it from Customers.";
 
   return (
     <form onSubmit={save} className={`${card} mt-4 space-y-4 p-4`}>
       <div>
         <h2 className="font-bold text-ink">Close the customer&apos;s link</h2>
-        <p className="mt-0.5 text-sm text-ink-3">
-          After an order is finished, the link that customer ordered with can
-          close by itself.
-        </p>
       </div>
       <div>
         <label className={label} htmlFor="link-close">

@@ -7,7 +7,6 @@ import { api, errorMessage } from "@/lib/client-api";
 import { inr } from "@/lib/format";
 import { compressImage } from "@/lib/image";
 import { DeleteButton } from "@/components/DeleteButton";
-import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { ListSkeleton } from "@/components/Skeleton";
 import {
   btnPrimary,
@@ -39,7 +38,6 @@ const EMPTY: Form = {
 
 export function ProductsClient({ isSuper }: { isSuper: boolean }) {
   const [items, setItems] = useState<ProductDTO[] | null>(null);
-  const [trash, setTrash] = useState<ProductDTO[]>([]);
   const [form, setForm] = useState<Form>(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -54,7 +52,6 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
         "/api/admin/products",
       );
       setItems(data.items);
-      setTrash(data.trash);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -373,17 +370,6 @@ export function ProductsClient({ isSuper }: { isSuper: boolean }) {
         </ul>
       )}
 
-      {isSuper && (
-        <RecentlyDeleted
-          entity="product"
-          rows={trash.map((p) => ({
-            id: p.id,
-            label: `${p.name}, ${inr(p.price)}`,
-            scheduledDeleteAt: p.scheduledDeleteAt,
-          }))}
-          onChange={load}
-        />
-      )}
     </div>
   );
 }

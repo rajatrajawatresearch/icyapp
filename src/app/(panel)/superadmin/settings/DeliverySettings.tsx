@@ -61,8 +61,7 @@ export function DeliverySettings({ initial }: { initial: DeliveryPricing }) {
       <div>
         <h2 className="font-bold text-ink">Delivery charge</h2>
         <p className="mt-0.5 text-sm text-ink-3">
-          Added to delivery orders at checkout. You can still set a different
-          charge on a single order from the Orders screen.
+          Added to every delivery order.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

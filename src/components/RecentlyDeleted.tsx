@@ -5,7 +5,13 @@ import { countdown } from "@/lib/format";
 import { useNow } from "./useNow";
 import { btnSecondary } from "./ui";
 
-type Row = { id: string; label: string; scheduledDeleteAt: string | null };
+/** `entity` on a row overrides the list's own, so one list can mix kinds. */
+type Row = {
+  id: string;
+  label: string;
+  scheduledDeleteAt: string | null;
+  entity?: TrashEntity;
+};
 
 /** "Recently deleted" rows with a live countdown and Undo (SUPER_ADMIN only). */
 export function RecentlyDeleted({
@@ -27,12 +33,13 @@ export function RecentlyDeleted({
   if (pending.length === 0 && !error) return null;
 
   async function undo(id: string) {
+    const kind = rows.find((r) => r.id === id)?.entity ?? entity;
     setBusyId(id);
     setError(null);
     try {
       await api("/api/admin/trash/undo", {
         method: "POST",
-        json: { entity, id },
+        json: { entity: kind, id },
       });
     } catch (e) {
       setError(errorMessage(e));
@@ -43,11 +50,8 @@ export function RecentlyDeleted({
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-dashed border-danger-line bg-danger-soft/60 p-4">
+    <section className="mt-5 rounded-2xl border border-dashed border-danger-line bg-danger-soft/60 p-4">
       <h2 className="text-sm font-semibold text-danger-ink">Recently deleted</h2>
-      <p className="text-xs text-danger-ink/80">
-        Permanently removed when the timer hits 0:00.
-      </p>
       {error && <p className="mt-2 text-sm text-danger-ink">{error}</p>}
       <ul className="mt-3 divide-y divide-danger-line">
         {pending.map((r) => (

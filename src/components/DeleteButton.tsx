@@ -53,9 +53,14 @@ export function DeleteButton({
 
   return (
     <>
-      <button type="button" className={btnDanger} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        aria-label={`Delete ${name}`}
+        title="Delete"
+        className={`${btnDanger} px-3`}
+        onClick={() => setOpen(true)}
+      >
         <Trash2 className="h-4 w-4" aria-hidden />
-        Delete
       </button>
       {open && (
         <div className={scrim} onClick={() => !busy && setOpen(false)}>
@@ -67,15 +72,10 @@ export function DeleteButton({
           >
             <h2 className="text-lg font-bold text-ink">Delete {entity}?</h2>
             <p className="mt-1 text-sm text-ink-2">
-              <span className="font-semibold text-ink">{name}</span>{" "}
+              <span className="font-semibold text-ink">{name}</span>.{" "}
               {seconds === 0
-                ? "is permanently deleted at once. This can't be undone."
-                : "is hidden now and permanently deleted when the timer runs out. You can undo until then."}
-              {entity === "customer" &&
-                " Their link stops working immediately; past orders are kept for your records."}
-              {entity === "product" && " Past orders that include it are kept."}
-              {entity === "account" &&
-                " They are signed out at once. What they did stays in the audit log."}
+                ? "This can't be undone."
+                : "Undo it in Settings, Delete, until the timer ends."}
             </p>
             <label className={`${labelCls} mt-4`} htmlFor={`delay-${id}`}>
               Delete in

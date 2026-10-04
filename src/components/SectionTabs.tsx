@@ -20,7 +20,7 @@ const SECTIONS = {
   settings: [
     { href: "/superadmin/settings", label: "Store", Icon: Store },
     { href: "/superadmin/settings/team", label: "Team", Icon: ShieldCheck },
-    { href: "/superadmin/settings/reset", label: "Data reset", Icon: RotateCcw },
+    { href: "/superadmin/settings/reset", label: "Delete", Icon: RotateCcw },
   ],
   delivery: [
     { href: "/admin/riders", label: "Team", Icon: Bike },

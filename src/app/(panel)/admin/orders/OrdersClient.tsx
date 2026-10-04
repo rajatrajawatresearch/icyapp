@@ -36,7 +36,7 @@ import { googleDirectionsUrl } from "@/lib/maps";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { DeleteButton } from "@/components/DeleteButton";
 import { ImageThumbs } from "@/components/ImageThumbs";
-import { RecentlyDeleted } from "@/components/RecentlyDeleted";
+import { More } from "@/components/More";
 import { ListSkeleton } from "@/components/Skeleton";
 import { OrderLines } from "@/components/OrderLines";
 import { PaymentBadge, StatusBadge } from "@/components/StatusBadge";
@@ -64,10 +64,13 @@ const SETTABLE: readonly string[] = ADMIN_SETTABLE_STATUSES;
 const isPayPending = (o: OrderDTO) =>
   o.payment?.status === "PENDING" && o.status !== "CANCELLED";
 
+/** Shown as buttons; the single statuses share one dropdown. */
+const MAIN_FILTERS: Filter[] = ["open", "pay", "all"];
+
 // One row of filters: what needs attention first, then each status.
 const FILTERS: { id: Filter; label: string; match: (o: OrderDTO) => boolean }[] = [
   { id: "open", label: "Open", match: (o) => !FINAL_STATUSES.includes(o.status) },
-  { id: "pay", label: "Payment to confirm", match: isPayPending },
+  { id: "pay", label: "To pay", match: isPayPending },
   ...ORDER_STATUSES.map((status) => ({
     id: status,
     label: ORDER_STATUS_LABEL[status],
@@ -78,7 +81,6 @@ const FILTERS: { id: Filter; label: string; match: (o: OrderDTO) => boolean }[] 
 
 export function OrdersClient({ isSuper }: { isSuper: boolean }) {
   const [items, setItems] = useState<OrderDTO[] | null>(null);
-  const [trash, setTrash] = useState<OrderDTO[]>([]);
   const [filter, setFilter] = useState<Filter>("open");
   const [error, setError] = useState<string | null>(null);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
@@ -108,7 +110,6 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
         ...data.items.map((o) => o.id),
       ]);
       setItems(data.items);
-      setTrash(data.trash);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -175,26 +176,42 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
         </p>
       </div>
 
-      <div className="mt-4 inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-muted p-1">
-        {FILTERS.map(({ id, label: text, match }) => {
-          const count = id === "all" ? 0 : (items ?? []).filter(match).length;
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={filter === id}
-              onClick={() => setFilter(id)}
-              className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
-                filter === id
-                  ? "bg-surface text-ink shadow-xs"
-                  : "text-ink-3 hover:text-ink"
-              }`}
-            >
-              {text}
-              {count > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
-            </button>
-          );
-        })}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="inline-flex gap-1 rounded-xl bg-muted p-1">
+          {FILTERS.filter((f) => MAIN_FILTERS.includes(f.id)).map(
+            ({ id, label: text, match }) => {
+              const count = id === "all" ? 0 : (items ?? []).filter(match).length;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={filter === id}
+                  onClick={() => setFilter(id)}
+                  className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
+                    filter === id ? "bg-surface text-ink shadow-xs" : "text-ink-3 hover:text-ink"
+                  }`}
+                >
+                  {text}
+                  {count > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
+                </button>
+              );
+            },
+          )}
+        </div>
+        {/* One dropdown for a single status, instead of a chip for each. */}
+        <select
+          aria-label="Show one status"
+          className={`${field} py-2`}
+          value={MAIN_FILTERS.includes(filter) ? "" : filter}
+          onChange={(e) => setFilter((e.target.value || "open") as Filter)}
+        >
+          <option value="">Status</option>
+          {ORDER_STATUSES.map((st) => (
+            <option key={st} value={st}>
+              {ORDER_STATUS_LABEL[st]} ({(items ?? []).filter((o) => o.status === st).length})
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
@@ -224,17 +241,6 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
         </ul>
       )}
 
-      {isSuper && (
-        <RecentlyDeleted
-          entity="order"
-          rows={trash.map((o) => ({
-            id: o.id,
-            label: `#${o.number}, ${o.customer.name}, ${inr(o.total)}`,
-            scheduledDeleteAt: o.scheduledDeleteAt,
-          }))}
-          onChange={load}
-        />
-      )}
     </div>
   );
 }
@@ -421,6 +427,37 @@ function OrderCard({
               label: orderStatusLabel("OUT_FOR_DELIVERY", o.fulfilmentType),
             };
 
+  // Any status, for the rare case the next-step button isn't the right move.
+  const statusPicker = (
+    <div className="min-w-44 flex-1">
+          <label className={label} htmlFor={`status-${o.id}`}>
+            Order status
+          </label>
+          <select
+            id={`status-${o.id}`}
+            className={input}
+            value={picked.status ?? o.status}
+            disabled={closed || busy !== null}
+            onChange={(e) => changeStatus(e.target.value)}
+          >
+            {/* Placed and Paid are set by the app, not picked: listed only to show where the order is. */}
+            {!SETTABLE.includes(o.status) && (
+              <option value={o.status} disabled>
+                {orderStatusLabel(o.status, o.fulfilmentType)}
+              </option>
+            )}
+            {ADMIN_SETTABLE_STATUSES.filter(
+              // A paid order is already past "confirmed".
+              (s) => !(s === "CONFIRMED" && o.status === "PAID"),
+            ).map((s) => (
+              <option key={s} value={s}>
+                {orderStatusLabel(s, o.fulfilmentType)}
+              </option>
+            ))}
+          </select>
+        </div>
+  );
+
   const highlight = isNew
     ? "border-brand-400 ring-2 ring-brand-200"
     : o.status === "PLACED"
@@ -553,38 +590,9 @@ function OrderCard({
 
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
-      {/* The dropdowns show the saved value and save the moment one is picked. */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className={label} htmlFor={`status-${o.id}`}>
-            Order status
-          </label>
-          <select
-            id={`status-${o.id}`}
-            className={input}
-            value={picked.status ?? o.status}
-            disabled={closed || busy !== null}
-            onChange={(e) => changeStatus(e.target.value)}
-          >
-            {/* Placed and Paid are set by the app, not picked: listed only to show where the order is. */}
-            {!SETTABLE.includes(o.status) && (
-              <option value={o.status} disabled>
-                {orderStatusLabel(o.status, o.fulfilmentType)}
-              </option>
-            )}
-            {ADMIN_SETTABLE_STATUSES.filter(
-              // A paid order is already past "confirmed".
-              (s) => !(s === "CONFIRMED" && o.status === "PAID"),
-            ).map((s) => (
-              <option key={s} value={s}>
-                {orderStatusLabel(s, o.fulfilmentType)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {o.fulfilmentType === "DELIVERY" && !closed && o.status !== "COMPLETED" && (
-          <div>
+      {/* Who delivers it: the one choice most delivery orders need. */}
+      {o.fulfilmentType === "DELIVERY" && !closed && o.status !== "COMPLETED" && (
+          <div className="mt-4">
             <label className={label} htmlFor={`partner-${o.id}`}>
               Delivery partner
             </label>
@@ -611,10 +619,9 @@ function OrderCard({
             </select>
           </div>
         )}
-      </div>
       <p
         aria-live="polite"
-        className={`mt-2 flex items-center gap-1.5 text-xs ${
+        className={`mt-2 flex items-center gap-1.5 text-xs empty:hidden ${
           saved && !busy ? "font-semibold text-success-ink" : "text-ink-3"
         }`}
       >
@@ -628,15 +635,11 @@ function OrderCard({
             <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} aria-hidden />
             {saved}
           </>
-        ) : closed ? (
-          "Cancelled. It can't be changed."
-        ) : (
-          "Saves automatically."
-        )}
+        ) : null}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {/* The usual next step, one tap. The dropdown above is for anything else. */}
+        {/* The usual next step, one tap. Anything else is under More. */}
         {next && (
           <button
             type="button"
@@ -648,21 +651,6 @@ function OrderCard({
             <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
         )}
-        {canChangeFee && feeDraft === null && (
-          <button
-            type="button"
-            className={btnSecondary}
-            disabled={busy !== null}
-            onClick={() => {
-              setError(null);
-              setFeeDraft(String(o.deliveryFee));
-            }}
-          >
-            <Truck className="h-4 w-4" aria-hidden />
-            {busy === "fee" ? "Saving…" : "Delivery charge"}
-          </button>
-        )}
-
         {pay?.status === "PENDING" && !closed && (
           <button
             type="button"
@@ -675,14 +663,31 @@ function OrderCard({
           </button>
         )}
 
-        {isSuper && (
-          <DeleteButton
-            entity="order"
-            id={o.id}
-            name={`Order #${o.number}`}
-            onScheduled={onDeleted}
-          />
-        )}
+        <More>
+          {statusPicker}
+          {canChangeFee && feeDraft === null && (
+            <button
+              type="button"
+              className={btnSecondary}
+              disabled={busy !== null}
+              onClick={() => {
+                setError(null);
+                setFeeDraft(String(o.deliveryFee));
+              }}
+            >
+              <Truck className="h-4 w-4" aria-hidden />
+              {busy === "fee" ? "Saving…" : "Delivery charge"}
+            </button>
+          )}
+          {isSuper && (
+            <DeleteButton
+              entity="order"
+              id={o.id}
+              name={`Order #${o.number}`}
+              onScheduled={onDeleted}
+            />
+          )}
+        </More>
       </div>
     </li>
   );
