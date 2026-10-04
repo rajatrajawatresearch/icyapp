@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import {
-  DEFAULT_DELETE_DELAY,
-  DELETE_DELAY_MINUTES,
+  DEFAULT_DELETE_DELAY_SECONDS,
+  DELETE_DELAY_SECONDS,
+  delayLabel,
   type TrashEntity,
 } from "@/lib/constants";
 import { api, errorMessage } from "@/lib/client-api";
@@ -16,7 +17,7 @@ import {
   sheet,
 } from "./ui";
 
-/** SUPER_ADMIN-only delete with a safety window: schedules deletion N minutes out. */
+/** SUPER_ADMIN-only delete: at once, or after a delay during which it can be undone. */
 export function DeleteButton({
   entity,
   id,
@@ -29,7 +30,7 @@ export function DeleteButton({
   onScheduled: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [minutes, setMinutes] = useState<number>(DEFAULT_DELETE_DELAY);
+  const [seconds, setSeconds] = useState<number>(DEFAULT_DELETE_DELAY_SECONDS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +40,7 @@ export function DeleteButton({
     try {
       await api("/api/admin/trash", {
         method: "POST",
-        json: { entity, id, minutes },
+        json: { entity, id, seconds },
       });
       setOpen(false);
       onScheduled();
@@ -66,9 +67,10 @@ export function DeleteButton({
           >
             <h2 className="text-lg font-bold text-ink">Delete {entity}?</h2>
             <p className="mt-1 text-sm text-ink-2">
-              <span className="font-semibold text-ink">{name}</span> is hidden
-              now and permanently deleted when the timer runs out. You can undo
-              until then.
+              <span className="font-semibold text-ink">{name}</span>{" "}
+              {seconds === 0
+                ? "is permanently deleted at once. This can't be undone."
+                : "is hidden now and permanently deleted when the timer runs out. You can undo until then."}
               {entity === "customer" &&
                 " Their link stops working immediately; past orders are kept for your records."}
               {entity === "product" && " Past orders that include it are kept."}
@@ -81,12 +83,12 @@ export function DeleteButton({
             <select
               id={`delay-${id}`}
               className={input}
-              value={minutes}
-              onChange={(e) => setMinutes(Number(e.target.value))}
+              value={seconds}
+              onChange={(e) => setSeconds(Number(e.target.value))}
             >
-              {DELETE_DELAY_MINUTES.map((m) => (
-                <option key={m} value={m}>
-                  {m} min
+              {DELETE_DELAY_SECONDS.map((sec) => (
+                <option key={sec} value={sec}>
+                  {delayLabel(sec)}
                 </option>
               ))}
             </select>
@@ -106,7 +108,11 @@ export function DeleteButton({
                 onClick={confirm}
                 disabled={busy}
               >
-                {busy ? "Scheduling…" : `Delete in ${minutes} min`}
+                {busy
+                  ? "Deleting…"
+                  : seconds === 0
+                    ? "Delete now"
+                    : `Delete in ${delayLabel(seconds).toLowerCase()}`}
               </button>
             </div>
           </div>

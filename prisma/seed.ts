@@ -8,12 +8,15 @@ const SUPER_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@test.com";
 const SUPER_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "changeme123";
 
 async function main() {
+  // Only a store with no owner at all gets one. The first super admin can be
+  // deleted or replaced from the app, and a re-run must not bring it back.
+  if (await prisma.admin.count({ where: { role: "SUPER_ADMIN" } })) {
+    console.log("\n✅ A super admin already exists, nothing to seed\n");
+    return;
+  }
   const passwordHash = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10);
-  // update: {} keeps an existing password intact if the seed is re-run.
-  await prisma.admin.upsert({
-    where: { email: SUPER_ADMIN_EMAIL },
-    update: {},
-    create: {
+  await prisma.admin.create({
+    data: {
       name: "Super Admin",
       email: SUPER_ADMIN_EMAIL,
       passwordHash,

@@ -1,10 +1,18 @@
 // Shared between server and client code — keep free of server-only imports.
 
-export const DELETE_DELAY_MINUTES = [1, 5, 10, 30] as const;
-export const DEFAULT_DELETE_DELAY = 5;
 
-/** Data reset: seconds before the rows are deleted for good (0 = at once, no undo). */
-export const RESET_DELAY_SECONDS = [0, 30, 60, 120, 300, 600, 1800] as const;
+/**
+ * Every "Delete in" dropdown (one row, or a data reset) offers the same
+ * choices: seconds before the rows are gone for good. 0 = at once, no undo.
+ */
+export const DELETE_DELAY_SECONDS = [0, 30, 60, 120, 300, 600, 1800] as const;
+export const DEFAULT_DELETE_DELAY_SECONDS = 300;
+
+export function delayLabel(seconds: number) {
+  if (seconds === 0) return "Instantly";
+  if (seconds < 60) return `${seconds} seconds`;
+  return `${seconds / 60} minute${seconds === 60 ? "" : "s"}`;
+}
 
 // "account" is a staff account: an admin, a super admin or a delivery partner.
 export const TRASH_ENTITIES = ["product", "customer", "order", "account"] as const;

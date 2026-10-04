@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import { RESET_DELAY_SECONDS, type ResetEntity } from "@/lib/constants";
+import {
+  DEFAULT_DELETE_DELAY_SECONDS,
+  DELETE_DELAY_SECONDS,
+  delayLabel,
+  type ResetEntity,
+} from "@/lib/constants";
 import { api, errorMessage } from "@/lib/client-api";
 import { countdown } from "@/lib/format";
 import { useNow } from "@/components/useNow";
@@ -29,13 +34,6 @@ const PRESETS: { label: string; range: Range }[] = [
 /** The preset the screen opens on: the last 5 minutes. */
 const DEFAULT_PRESET = 3;
 
-const delayLabel = (sec: number) =>
-  sec === 0
-    ? "Instantly"
-    : sec < 60
-      ? `${sec} seconds`
-      : `${sec / 60} minute${sec === 60 ? "" : "s"}`;
-
 const ENTITIES: { id: ResetEntity; label: string }[] = [
   { id: "order", label: "Orders" },
   { id: "customer", label: "Customers" },
@@ -58,7 +56,7 @@ export function ResetClient() {
     unit: "minutes",
   });
   /** Seconds until the rows are deleted for good. */
-  const [delay, setDelay] = useState<number>(300);
+  const [delay, setDelay] = useState<number>(DEFAULT_DELETE_DELAY_SECONDS);
   const [confirm, setConfirm] = useState("");
   const [counts, setCounts] = useState<Counts | null>(null);
   const [busy, setBusy] = useState(false);
@@ -290,7 +288,7 @@ export function ResetClient() {
               value={delay}
               onChange={(e) => setDelay(Number(e.target.value))}
             >
-              {RESET_DELAY_SECONDS.map((sec) => (
+              {DELETE_DELAY_SECONDS.map((sec) => (
                 <option key={sec} value={sec}>
                   {delayLabel(sec)}
                 </option>

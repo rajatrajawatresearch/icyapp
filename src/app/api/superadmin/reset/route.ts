@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireAdminApi } from "@/lib/auth";
 import { jsonError, parseJson } from "@/lib/api";
 import { audit } from "@/lib/audit";
-import { RESET_DELAY_SECONDS, RESET_ENTITIES } from "@/lib/constants";
+import { DELETE_DELAY_SECONDS, RESET_ENTITIES } from "@/lib/constants";
 import { purgeExpired } from "@/lib/purge";
 import { keepActorName } from "@/lib/trash";
 
@@ -30,7 +30,7 @@ const ResetSchema = z.object({
     .number()
     .int()
     .refine(
-      (s) => (RESET_DELAY_SECONDS as readonly number[]).includes(s),
+      (s) => (DELETE_DELAY_SECONDS as readonly number[]).includes(s),
       "Invalid delay",
     )
     .optional(),

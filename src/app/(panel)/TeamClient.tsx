@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Copy } from "lucide-react";
 import type { AdminDTO } from "@/lib/dto";
 import { api, copyText, errorMessage } from "@/lib/client-api";
@@ -12,6 +13,7 @@ import { DeleteButton } from "@/components/DeleteButton";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { ListSkeleton } from "@/components/Skeleton";
 import {
+  btnDanger,
   btnPrimary,
   btnSecondary,
   card,
@@ -246,6 +248,12 @@ export function TeamClient({
                     {a.isActive ? `Added ${formatDateTime(a.createdAt)}` : "Deactivated"}
                   </p>
                 </div>
+                {manage && a.id === myId && (
+                  // Your own account goes only by putting another in its place.
+                  <Link href="/admin/account#replace" className={btnDanger}>
+                    Delete my account
+                  </Link>
+                )}
                 {manage && a.id !== myId && (
                   <div className="flex flex-wrap gap-2">
                     <button type="button" className={btnSecondary} onClick={() => toggle(a)}>
