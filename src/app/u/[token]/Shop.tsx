@@ -53,7 +53,7 @@ export function Shop({
   );
   const [address, setAddress] = useState("");
   const [pin, setPin] = useState<LatLng | null>(null);
-  const [payment, setPayment] = useState<"CASH" | "UPI">("CASH");
+  const [payment, setPayment] = useState<"CASH" | "UPI">("UPI");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -175,7 +175,9 @@ export function Shop({
       {products.length === 0 ? (
         <div className="px-6 py-20 text-center">
           <Package className="mx-auto h-10 w-10 text-ink-4" aria-hidden />
-          <p className="mt-3 font-semibold text-ink">Nothing on the shelf yet</p>
+          <p className="mt-3 font-semibold text-ink">
+            Nothing on the shelf yet
+          </p>
           <p className="mt-1 text-sm text-ink-3">
             The store hasn&apos;t added products. Check back soon.
           </p>
@@ -231,7 +233,11 @@ export function Shop({
                         onClick={() => setQty(p.id, 1)}
                         className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-brand-50 text-sm font-bold text-brand-700 transition hover:bg-brand-100 active:scale-[0.97] disabled:bg-muted disabled:text-ink-4"
                       >
-                        <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden />
+                        <Plus
+                          className="h-4 w-4"
+                          strokeWidth={2.6}
+                          aria-hidden
+                        />
                         Add
                       </button>
                     ) : (
@@ -394,7 +400,11 @@ export function Shop({
                   onClick={() => setPayment("CASH")}
                   Icon={Banknote}
                   title="Cash"
-                  sub={fulfilment === "PICKUP" ? "Pay at pickup" : "Pay at the door"}
+                  sub={
+                    fulfilment === "PICKUP"
+                      ? "Pay at pickup"
+                      : "Pay at the door"
+                  }
                 />
                 <Choice
                   checked={payment === "UPI"}
@@ -431,7 +441,10 @@ export function Shop({
             )}
 
             {error && (
-              <p role="alert" className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger-ink">
+              <p
+                role="alert"
+                className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger-ink"
+              >
                 {error}
               </p>
             )}
