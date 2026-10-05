@@ -24,7 +24,8 @@ export async function getDeliveryPricing(): Promise<DeliveryPricing> {
   const s = await row();
   return {
     fee: Number(s?.deliveryFee ?? 0),
-    freeAbove: s?.freeDeliveryAbove == null ? null : Number(s.freeDeliveryAbove),
+    freeAbove:
+      s?.freeDeliveryAbove == null ? null : Number(s.freeDeliveryAbove),
   };
 }
 
@@ -35,4 +36,20 @@ export async function getDeliveryPricing(): Promise<DeliveryPricing> {
 export async function getLinkCloseAfterSec(): Promise<number | null> {
   const s = await row();
   return s ? s.linkCloseAfterSec : DEFAULT_LINK_CLOSE_SEC;
+}
+
+export type PayDefaults = {
+  qrImageUrl: string | null;
+  upiId: string | null;
+  note: string | null;
+};
+
+/** The store's saved QR/UPI ID/bank details, auto-applied to every new UPI order. */
+export async function getPayDefaults(): Promise<PayDefaults> {
+  const s = await row();
+  return {
+    qrImageUrl: s?.payQrImageUrl ?? null,
+    upiId: s?.payUpiId ?? null,
+    note: s?.payNote ?? null,
+  };
 }

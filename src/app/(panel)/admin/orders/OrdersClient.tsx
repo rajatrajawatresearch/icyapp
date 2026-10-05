@@ -68,8 +68,16 @@ const isPayPending = (o: OrderDTO) =>
 const MAIN_FILTERS: Filter[] = ["open", "pay", "all"];
 
 // One row of filters: what needs attention first, then each status.
-const FILTERS: { id: Filter; label: string; match: (o: OrderDTO) => boolean }[] = [
-  { id: "open", label: "Open", match: (o) => !FINAL_STATUSES.includes(o.status) },
+const FILTERS: {
+  id: Filter;
+  label: string;
+  match: (o: OrderDTO) => boolean;
+}[] = [
+  {
+    id: "open",
+    label: "Open",
+    match: (o) => !FINAL_STATUSES.includes(o.status),
+  },
   { id: "pay", label: "To pay", match: isPayPending },
   ...ORDER_STATUSES.map((status) => ({
     id: status,
@@ -160,7 +168,9 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
         <h1 className={pageTitle}>
           Orders
           {newCount > 0 && (
-            <span className={`${pill} ml-2 bg-danger align-middle text-on-solid`}>
+            <span
+              className={`${pill} ml-2 bg-danger align-middle text-on-solid`}
+            >
               {newCount} new
             </span>
           )}
@@ -180,7 +190,8 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
         <div className="inline-flex gap-1 rounded-xl bg-muted p-1">
           {FILTERS.filter((f) => MAIN_FILTERS.includes(f.id)).map(
             ({ id, label: text, match }) => {
-              const count = id === "all" ? 0 : (items ?? []).filter(match).length;
+              const count =
+                id === "all" ? 0 : (items ?? []).filter(match).length;
               return (
                 <button
                   key={id}
@@ -188,11 +199,17 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
                   aria-pressed={filter === id}
                   onClick={() => setFilter(id)}
                   className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
-                    filter === id ? "bg-surface text-ink shadow-xs" : "text-ink-3 hover:text-ink"
+                    filter === id
+                      ? "bg-surface text-ink shadow-xs"
+                      : "text-ink-3 hover:text-ink"
                   }`}
                 >
                   {text}
-                  {count > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
+                  {count > 0 && (
+                    <span className="ml-1.5 tabular-nums opacity-70">
+                      {count}
+                    </span>
+                  )}
                 </button>
               );
             },
@@ -208,7 +225,8 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
           <option value="">Status</option>
           {ORDER_STATUSES.map((st) => (
             <option key={st} value={st}>
-              {ORDER_STATUS_LABEL[st]} ({(items ?? []).filter((o) => o.status === st).length})
+              {ORDER_STATUS_LABEL[st]} (
+              {(items ?? []).filter((o) => o.status === st).length})
             </option>
           ))}
         </select>
@@ -240,7 +258,6 @@ export function OrdersClient({ isSuper }: { isSuper: boolean }) {
           ))}
         </ul>
       )}
-
     </div>
   );
 }
@@ -271,13 +288,16 @@ function OrderCard({
   /** What the last save did, shown for a moment so it is clear it went through. */
   const [saved, setSaved] = useState<string | null>(null);
   /** The value just picked in a dropdown, shown while it is being saved. */
-  const [picked, setPicked] = useState<{ status?: string; partner?: string }>({});
+  const [picked, setPicked] = useState<{ status?: string; partner?: string }>(
+    {},
+  );
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   /** The delivery-charge editor: null when closed, otherwise the typed amount. */
   const [feeDraft, setFeeDraft] = useState<string | null>(null);
   const pay = o.payment;
   const closed = o.status === "CANCELLED";
-  const upiPending = pay?.method === "UPI" && pay.status === "PENDING" && !closed;
+  const upiPending =
+    pay?.method === "UPI" && pay.status === "PENDING" && !closed;
   const pin =
     o.deliveryLat !== null && o.deliveryLng !== null
       ? { lat: o.deliveryLat, lng: o.deliveryLng }
@@ -330,7 +350,12 @@ function OrderCard({
   function saveFee(e: React.FormEvent) {
     e.preventDefault();
     const fee = Number(feeDraft);
-    if (feeDraft === null || feeDraft.trim() === "" || !Number.isFinite(fee) || fee < 0) {
+    if (
+      feeDraft === null ||
+      feeDraft.trim() === "" ||
+      !Number.isFinite(fee) ||
+      fee < 0
+    ) {
       setError("Enter the delivery charge as a number, 0 or more");
       return;
     }
@@ -380,7 +405,10 @@ function OrderCard({
     run("qr", "QR sent to the customer.", async () => {
       const fd = new FormData();
       // Screenshots are large; keep the QR sharp but small enough to upload fast.
-      fd.set("file", await compressImage(file, { maxSide: 1600, quality: 0.9 }));
+      fd.set(
+        "file",
+        await compressImage(file, { maxSide: 1600, quality: 0.9 }),
+      );
       return api<OrderDTO>(`/api/admin/orders/${o.id}/qr`, {
         method: "POST",
         body: fd,
@@ -402,14 +430,7 @@ function OrderCard({
     );
   }
 
-  async function markPaid() {
-    if (
-      !(await confirmDialog({
-        title: `Received ${inr(o.total)} for order #${o.number}?`,
-        confirm: "Yes, mark paid",
-      }))
-    )
-      return;
+  function markPaid() {
     run("paid", "Payment marked as received.", () =>
       api<OrderDTO>(`/api/admin/orders/${o.id}/mark-paid`, { method: "POST" }),
     );
@@ -430,32 +451,32 @@ function OrderCard({
   // Any status, for the rare case the next-step button isn't the right move.
   const statusPicker = (
     <div className="min-w-44 flex-1">
-          <label className={label} htmlFor={`status-${o.id}`}>
-            Order status
-          </label>
-          <select
-            id={`status-${o.id}`}
-            className={input}
-            value={picked.status ?? o.status}
-            disabled={closed || busy !== null}
-            onChange={(e) => changeStatus(e.target.value)}
-          >
-            {/* Placed and Paid are set by the app, not picked: listed only to show where the order is. */}
-            {!SETTABLE.includes(o.status) && (
-              <option value={o.status} disabled>
-                {orderStatusLabel(o.status, o.fulfilmentType)}
-              </option>
-            )}
-            {ADMIN_SETTABLE_STATUSES.filter(
-              // A paid order is already past "confirmed".
-              (s) => !(s === "CONFIRMED" && o.status === "PAID"),
-            ).map((s) => (
-              <option key={s} value={s}>
-                {orderStatusLabel(s, o.fulfilmentType)}
-              </option>
-            ))}
-          </select>
-        </div>
+      <label className={label} htmlFor={`status-${o.id}`}>
+        Order status
+      </label>
+      <select
+        id={`status-${o.id}`}
+        className={input}
+        value={picked.status ?? o.status}
+        disabled={closed || busy !== null}
+        onChange={(e) => changeStatus(e.target.value)}
+      >
+        {/* Placed and Paid are set by the app, not picked: listed only to show where the order is. */}
+        {!SETTABLE.includes(o.status) && (
+          <option value={o.status} disabled>
+            {orderStatusLabel(o.status, o.fulfilmentType)}
+          </option>
+        )}
+        {ADMIN_SETTABLE_STATUSES.filter(
+          // A paid order is already past "confirmed".
+          (s) => !(s === "CONFIRMED" && o.status === "PAID"),
+        ).map((s) => (
+          <option key={s} value={s}>
+            {orderStatusLabel(s, o.fulfilmentType)}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 
   const highlight = isNew
@@ -474,7 +495,9 @@ function OrderCard({
           <p className="text-xl leading-tight font-extrabold tracking-tight text-ink">
             #{o.number}
             {isNew && (
-              <span className={`${pill} ml-2 bg-brand-600 align-middle text-on-solid`}>
+              <span
+                className={`${pill} ml-2 bg-brand-600 align-middle text-on-solid`}
+              >
                 New
               </span>
             )}
@@ -532,7 +555,9 @@ function OrderCard({
           <p className="flex items-center gap-2">
             <Bike className="h-4 w-4 shrink-0 text-ink-3" aria-hidden />
             <span>
-              <span className="font-semibold text-ink">{o.deliveryPartner.name}</span>{" "}
+              <span className="font-semibold text-ink">
+                {o.deliveryPartner.name}
+              </span>{" "}
               {o.deliveredAt ? "delivered it" : "is delivering"}
             </span>
           </p>
@@ -575,7 +600,11 @@ function OrderCard({
             <button type="submit" className={btnPrimary}>
               Save charge
             </button>
-            <button type="button" className={btnSecondary} onClick={() => setFeeDraft(null)}>
+            <button
+              type="button"
+              className={btnSecondary}
+              onClick={() => setFeeDraft(null)}
+            >
               Keep {o.deliveryFee > 0 ? inr(o.deliveryFee) : "free"}
             </button>
           </div>
@@ -591,7 +620,9 @@ function OrderCard({
       {error && <p className="mt-3 text-sm text-danger-ink">{error}</p>}
 
       {/* Who delivers it: the one choice most delivery orders need. */}
-      {o.fulfilmentType === "DELIVERY" && !closed && o.status !== "COMPLETED" && (
+      {o.fulfilmentType === "DELIVERY" &&
+        !closed &&
+        o.status !== "COMPLETED" && (
           <div className="mt-4">
             <label className={label} htmlFor={`partner-${o.id}`}>
               Delivery partner
@@ -609,7 +640,9 @@ function OrderCard({
               {/* Keep a deactivated-but-assigned partner visible so the select shows the truth. */}
               {o.deliveryPartner &&
                 !partners.some((p) => p.id === o.deliveryPartner!.id) && (
-                  <option value={o.deliveryPartner.id}>{o.deliveryPartner.name}</option>
+                  <option value={o.deliveryPartner.id}>
+                    {o.deliveryPartner.name}
+                  </option>
                 )}
               {partners.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -632,7 +665,11 @@ function OrderCard({
           </>
         ) : saved ? (
           <>
-            <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} aria-hidden />
+            <Check
+              className="h-3.5 w-3.5 shrink-0"
+              strokeWidth={3}
+              aria-hidden
+            />
             {saved}
           </>
         ) : null}
@@ -716,7 +753,9 @@ function UpiPanel({
   const pay = o.payment!;
   const fileRef = useRef<HTMLInputElement>(null);
   /** The UPI ID / bank details form: null when closed. */
-  const [draft, setDraft] = useState<{ upiId: string; note: string } | null>(null);
+  const [draft, setDraft] = useState<{ upiId: string; note: string } | null>(
+    null,
+  );
   const sent = Boolean(pay.qrImageUrl || pay.upiId || pay.payNote);
 
   const status =
@@ -732,7 +771,10 @@ function UpiPanel({
     let last = { upiId: "", note: "" };
     try {
       // The store's UPI ID rarely changes: start from what was sent last time.
-      last = { ...last, ...JSON.parse(localStorage.getItem(LAST_DETAILS_KEY) ?? "{}") };
+      last = {
+        ...last,
+        ...JSON.parse(localStorage.getItem(LAST_DETAILS_KEY) ?? "{}"),
+      };
     } catch {}
     setDraft({
       upiId: pay.upiId ?? (pay.payNote ? "" : last.upiId),
@@ -756,7 +798,10 @@ function UpiPanel({
     <div className="mt-3 rounded-xl bg-subtle p-2.5">
       <div className="flex items-center gap-3">
         {pay.qrImageUrl && (
-          <ImageThumbs images={[{ id: "qr", url: pay.qrImageUrl }]} alt="UPI QR" />
+          <ImageThumbs
+            images={[{ id: "qr", url: pay.qrImageUrl }]}
+            alt="UPI QR"
+          />
         )}
         {pending ? (
           <>
@@ -833,7 +878,10 @@ function UpiPanel({
       )}
 
       {draft !== null && (
-        <form onSubmit={send} className="mt-2.5 space-y-3 border-t border-line pt-2.5">
+        <form
+          onSubmit={send}
+          className="mt-2.5 space-y-3 border-t border-line pt-2.5"
+        >
           <div>
             <label className={label} htmlFor={`upi-${o.id}`}>
               UPI ID
@@ -867,7 +915,11 @@ function UpiPanel({
             <button type="submit" className={btnPrimary}>
               Send to the customer
             </button>
-            <button type="button" className={btnSecondary} onClick={() => setDraft(null)}>
+            <button
+              type="button"
+              className={btnSecondary}
+              onClick={() => setDraft(null)}
+            >
               Cancel
             </button>
           </div>
@@ -884,7 +936,11 @@ function UpiPanel({
             <Images className="h-4 w-4 text-ink-3" aria-hidden />
             Payment proof from the customer ({pay.proofs.length})
           </p>
-          <ImageThumbs images={pay.proofs} alt="Payment screenshot" className="mt-2" />
+          <ImageThumbs
+            images={pay.proofs}
+            alt="Payment screenshot"
+            className="mt-2"
+          />
           {pending && (
             <p className="mt-2 text-xs text-ink-3">
               Tap a screenshot to open it. If the amount ({inr(o.total)}) has

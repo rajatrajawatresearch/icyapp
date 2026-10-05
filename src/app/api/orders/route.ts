@@ -7,8 +7,10 @@ import { MAX_LINE_QTY } from "@/lib/constants";
 import { resolveCustomer } from "@/lib/customer";
 import { inr } from "@/lib/format";
 import { syncLinkExpiry } from "@/lib/link-expiry";
-import { notifyStore } from "@/lib/notify";
+import { pickRoundRobinPartner } from "@/lib/delivery";
+import { notifyStaff, notifyStore } from "@/lib/notify";
 import { deliveryFeeFor } from "@/lib/pricing";
+import { getPayDefaults } from "@/lib/settings";
 
 const CreateOrderSchema = z
   .object({
@@ -57,6 +59,11 @@ export async function POST(req: Request) {
     );
   }
 
+  const payDefaults =
+    paymentMethod === "UPI"
+      ? await getPayDefaults()
+      : { qrImageUrl: null, upiId: null, note: null };
+
   try {
     const order = await prisma.$transaction(async (tx) => {
       const products = await tx.product.findMany({
@@ -77,7 +84,9 @@ export async function POST(req: Request) {
       for (const p of products) {
         const qty = qtyByProduct.get(p.id)!;
         if (qty > MAX_LINE_QTY)
-          throw new UserError(`Please order at most ${MAX_LINE_QTY} of "${p.name}".`);
+          throw new UserError(
+            `Please order at most ${MAX_LINE_QTY} of "${p.name}".`,
+          );
         // Stock is only counted for products the store tracks (stockQty set).
         if (p.stockQty !== null) {
           // Conditional decrement: never oversell even with concurrent orders.
@@ -114,9 +123,15 @@ export async function POST(req: Request) {
       );
       total = total.add(deliveryFee);
 
+      // New delivery orders go straight to the next partner in rotation —
+      // no manual assignment step for the store.
+      const deliveryPartnerId =
+        fulfilmentType === "DELIVERY" ? await pickRoundRobinPartner(tx) : null;
+
       const created = await tx.order.create({
         data: {
           deliveryFee,
+          deliveryPartnerId,
           customerId: customer.id,
           customerName: customer.name,
           customerPhone: customer.phone,
@@ -138,11 +153,23 @@ export async function POST(req: Request) {
               priceAtOrder: p.price,
             })),
           },
-          payment: { create: { method: paymentMethod, amount: total } },
+          payment: {
+            create: {
+              method: paymentMethod,
+              amount: total,
+              ...(paymentMethod === "UPI"
+                ? {
+                    qrImageUrl: payDefaults.qrImageUrl,
+                    upiId: payDefaults.upiId,
+                    payNote: payDefaults.note,
+                  }
+                : {}),
+            },
+          },
         },
         select: { id: true, number: true },
       });
-      return { ...created, total: Number(total) };
+      return { ...created, total: Number(total), deliveryPartnerId };
     });
 
     // A new order keeps the link open, even if it was about to close.
@@ -153,6 +180,14 @@ export async function POST(req: Request) {
       title: `New order #${order.number}`,
       body: `${customer.name}, ${inr(order.total)}, ${paymentMethod === "UPI" ? "UPI" : "cash"}, ${fulfilmentType === "DELIVERY" ? "delivery" : "pickup"}`,
     });
+    if (order.deliveryPartnerId) {
+      await notifyStaff(order.deliveryPartnerId, {
+        type: "delivery_assigned",
+        orderId: order.id,
+        title: `New delivery #${order.number}`,
+        body: `${customer.name}, ${fulfilmentType === "DELIVERY" ? (body.data.deliveryAddress ?? "address in the order") : ""}`,
+      });
+    }
     return NextResponse.json(
       { id: order.id, number: order.number },
       { status: 201 },

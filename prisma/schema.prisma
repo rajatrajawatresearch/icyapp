@@ -232,6 +232,11 @@ model StoreSettings {
   /// A customer's link closes this many seconds after their order is finished
   /// (0 = at once, null = never).
   linkCloseAfterSec Int?     @default(120)
+  /// Saved once, auto-applied to every new UPI order so the QR/UPI ID/bank
+  /// details don't need re-uploading each time. Replaceable anytime.
+  payQrImageUrl     String?
+  payUpiId          String?
+  payNote           String?
   updatedAt         DateTime @updatedAt
 }
 
