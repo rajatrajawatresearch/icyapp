@@ -27,15 +27,15 @@
       <stop offset="0" stop-color="#3a3a40"/>
       <stop offset="1" stop-color="#121214"/>
     </radialGradient>
-    <!-- the diamond's facets: white and shining, lit from the top-left -->
-    <linearGradient id="c1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dce6ef"/></linearGradient>
-    <linearGradient id="c2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef5fb"/></linearGradient>
-    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8fb"/><stop offset="1" stop-color="#c3d2de"/></linearGradient>
-    <linearGradient id="c4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef3f8"/><stop offset="1" stop-color="#b3c2d1"/></linearGradient>
-    <linearGradient id="c5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9aa7b3"/><stop offset="1" stop-color="#687481"/></linearGradient>
-    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c3d1dd"/></linearGradient>
-    <linearGradient id="p2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef3f8"/><stop offset="1" stop-color="#9eafbe"/></linearGradient>
-    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c8894"/><stop offset="1" stop-color="#48515a"/></linearGradient>
+    <!-- the diamond's facets: ice-white, lit from the top-left -->
+    <linearGradient id="c1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e5f3fb"/></linearGradient>
+    <linearGradient id="c2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f3fbff"/></linearGradient>
+    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fcff"/><stop offset="1" stop-color="#cfe9f5"/></linearGradient>
+    <linearGradient id="c4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1faff"/><stop offset="1" stop-color="#bfe1ef"/></linearGradient>
+    <linearGradient id="c5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9ccdc"/><stop offset="1" stop-color="#7aa3b8"/></linearGradient>
+    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cfe9f5"/></linearGradient>
+    <linearGradient id="p2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1faff"/><stop offset="1" stop-color="#aed3e4"/></linearGradient>
+    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fb4c8"/><stop offset="1" stop-color="#5c7f92"/></linearGradient>
     <filter id="soft" x="-30%" y="-60%" width="160%" height="220%">
       <feGaussianBlur stdDeviation="12"/>
     </filter>
@@ -87,8 +87,8 @@
         calcMode="linear"
         repeatCount="indefinite"
       />
-      <g transform="scale(.43) translate(-256 -278)" opacity=".62" filter="url(#drop)">
-        <g stroke-linejoin="round" stroke-width="5">
+      <g transform="scale(.43) translate(-256 -278)" opacity=".72" filter="url(#drop)">
+        <g stroke-linejoin="round" stroke-width="14">
           <path d="M90 216 172 140 200 216Z" fill="url(#c1)" stroke="url(#c1)"/>
           <path d="M172 140H256L200 216Z" fill="url(#c2)" stroke="url(#c2)"/>
           <path d="M256 140 312 216H200Z" fill="url(#c3)" stroke="url(#c3)"/>
@@ -98,16 +98,18 @@
           <path d="M200 216H312L256 416Z" fill="url(#p2)" stroke="url(#p2)"/>
           <path d="M312 216H422L256 416Z" fill="url(#p3)" stroke="url(#p3)"/>
         </g>
-        <!-- facet edges, dark on the shadowed side for bevelled depth -->
+        <!-- facet edges, dark on the shadowed side for bevelled depth, rounded -->
         <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M172 140 200 216 256 140 312 216 340 140" stroke="#fff" stroke-width="5" opacity=".55"/>
-          <path d="M90 216H422" stroke="#fff" stroke-width="6" opacity=".7"/>
-          <path d="M94 212 172 140H256" stroke="#fff" stroke-width="11" opacity=".95"/>
-          <path d="M340 140 422 216 312 216" stroke="#3e4a56" stroke-width="5" opacity=".6"/>
-          <path d="M312 216 422 216 256 416" stroke="#2c3640" stroke-width="5" opacity=".55"/>
+          <path d="M172 140 200 216 256 140 312 216 340 140" stroke="#fff" stroke-width="7" opacity=".6"/>
+          <path d="M90 216H422" stroke="#fff" stroke-width="8" opacity=".75"/>
+          <path d="M94 212 172 140H256" stroke="#fff" stroke-width="13" opacity=".95"/>
+          <path d="M340 140 422 216 312 216" stroke="#5c7f92" stroke-width="7" opacity=".6"/>
+          <path d="M312 216 422 216 256 416" stroke="#44677a" stroke-width="7" opacity=".55"/>
         </g>
-        <!-- a glossy highlight where the light hits hardest -->
-        <ellipse cx="190" cy="172" rx="34" ry="16" fill="#fff" opacity=".8" transform="rotate(-28 190 172)"/>
+        <!-- a glossy ice-blue highlight where the light hits hardest -->
+        <ellipse cx="190" cy="172" rx="36" ry="18" fill="#f3fbff" opacity=".85" transform="rotate(-28 190 172)"/>
+        <!-- a second, softer highlight for a rounder, polished feel -->
+        <ellipse cx="256" cy="260" rx="48" ry="26" fill="#eaf7ff" opacity=".35"/>
       </g>
     </g>
   </g>

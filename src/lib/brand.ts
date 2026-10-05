@@ -14,7 +14,7 @@ export const MANIFEST_COLORS = {
  * Icons are cached for a day. Raise this whenever the artwork changes, so
  * every device fetches the new one at once instead of showing the old logo.
  */
-const ICON_VERSION = "10";
+const ICON_VERSION = "11";
 const v = (path: string) => `${path}?v=${ICON_VERSION}`;
 
 export const ICONS = {
