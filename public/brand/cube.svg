@@ -42,12 +42,18 @@
     <filter id="shine" x="-40%" y="-40%" width="180%" height="180%">
       <feGaussianBlur stdDeviation="22"/>
     </filter>
+    <filter id="drop" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity=".55"/>
+    </filter>
   </defs>
 
   <!-- where the pin touches down, then the light it throws -->
   <ellipse cx="256" cy="452" rx="74" ry="13" fill="#000" opacity=".65" filter="url(#soft)"/>
   <circle cx="256" cy="262" r="240" fill="url(#halo)"/>
   <path d="M256 446C256 446 124 320 124 214A132 132 0 1 1 388 214C388 320 256 446 256 446Z" fill="#ffd21f" opacity=".8" filter="url(#shine)"/>
+
+  <!-- the pin's own shadow, lifting it off the tile -->
+  <path d="M256 446C256 446 124 320 124 214A132 132 0 1 1 388 214C388 320 256 446 256 446Z" fill="#000" opacity=".5" filter="url(#drop)"/>
 
   <!-- the location pin, golden -->
   <path d="M256 446C256 446 124 320 124 214A132 132 0 1 1 388 214C388 320 256 446 256 446Z" fill="url(#pin)"/>
@@ -59,6 +65,9 @@
   <!-- the dark well the stone sits in -->
   <circle cx="256" cy="214" r="92" fill="url(#well)"/>
   <circle cx="256" cy="214" r="92" fill="none" stroke="#7a4a00" stroke-width="5" opacity=".7"/>
+
+  <!-- the diamond's own shadow, grounding it in the well -->
+  <ellipse cx="256" cy="256" rx="46" ry="12" fill="#000" opacity=".5" filter="url(#soft)"/>
 
   <!-- the diamond: five crown facets over three pavilion facets, glassy and
        spinning on its own vertical axis forever (squash-X fakes the 3D turn,
@@ -74,7 +83,7 @@
         calcMode="linear"
         repeatCount="indefinite"
       />
-      <g transform="scale(.43) translate(-256 -278)" opacity=".62">
+      <g transform="scale(.43) translate(-256 -278)" opacity=".62" filter="url(#drop)">
         <g stroke-linejoin="round" stroke-width="5">
           <path d="M90 216 172 140 200 216Z" fill="url(#c1)" stroke="url(#c1)"/>
           <path d="M172 140H256L200 216Z" fill="url(#c2)" stroke="url(#c2)"/>
@@ -85,11 +94,16 @@
           <path d="M200 216H312L256 416Z" fill="url(#p2)" stroke="url(#p2)"/>
           <path d="M312 216H422L256 416Z" fill="url(#p3)" stroke="url(#p3)"/>
         </g>
-        <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M172 140 200 216 256 140 312 216 340 140" stroke-width="5" opacity=".55"/>
-          <path d="M90 216H422" stroke-width="6" opacity=".7"/>
-          <path d="M94 212 172 140H256" stroke-width="11" opacity=".95"/>
+        <!-- facet edges, dark on the shadowed side for bevelled depth -->
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M172 140 200 216 256 140 312 216 340 140" stroke="#fff" stroke-width="5" opacity=".55"/>
+          <path d="M90 216H422" stroke="#fff" stroke-width="6" opacity=".7"/>
+          <path d="M94 212 172 140H256" stroke="#fff" stroke-width="11" opacity=".95"/>
+          <path d="M340 140 422 216 312 216" stroke="#3e4a56" stroke-width="5" opacity=".6"/>
+          <path d="M312 216 422 216 256 416" stroke="#2c3640" stroke-width="5" opacity=".55"/>
         </g>
+        <!-- a glossy highlight where the light hits hardest -->
+        <ellipse cx="190" cy="172" rx="34" ry="16" fill="#fff" opacity=".8" transform="rotate(-28 190 172)"/>
       </g>
     </g>
   </g>
