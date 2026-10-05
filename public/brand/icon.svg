@@ -27,15 +27,15 @@
       <stop offset="0" stop-color="#3a3a40"/>
       <stop offset="1" stop-color="#121214"/>
     </radialGradient>
-    <!-- the diamond's facets: lit from the top-left, darkest bottom-right -->
-    <linearGradient id="c1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffee9e"/><stop offset="1" stop-color="#ffc533"/></linearGradient>
-    <linearGradient id="c2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffdf0"/><stop offset="1" stop-color="#ffe680"/></linearGradient>
-    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffdd55"/><stop offset="1" stop-color="#f5b000"/></linearGradient>
-    <linearGradient id="c4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#eea300"/></linearGradient>
-    <linearGradient id="c5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e59a00"/><stop offset="1" stop-color="#b06c00"/></linearGradient>
-    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd23f"/><stop offset="1" stop-color="#d48a00"/></linearGradient>
-    <linearGradient id="p2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#ee9f00"/></linearGradient>
-    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c88100"/><stop offset="1" stop-color="#7f4a00"/></linearGradient>
+    <!-- the diamond's facets: white and shining, lit from the top-left -->
+    <linearGradient id="c1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dce6ef"/></linearGradient>
+    <linearGradient id="c2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef5fb"/></linearGradient>
+    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8fb"/><stop offset="1" stop-color="#c3d2de"/></linearGradient>
+    <linearGradient id="c4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef3f8"/><stop offset="1" stop-color="#b3c2d1"/></linearGradient>
+    <linearGradient id="c5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9aa7b3"/><stop offset="1" stop-color="#687481"/></linearGradient>
+    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c3d1dd"/></linearGradient>
+    <linearGradient id="p2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef3f8"/><stop offset="1" stop-color="#9eafbe"/></linearGradient>
+    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c8894"/><stop offset="1" stop-color="#48515a"/></linearGradient>
     <filter id="soft" x="-30%" y="-60%" width="160%" height="220%">
       <feGaussianBlur stdDeviation="12"/>
     </filter>
@@ -86,4 +86,5 @@
   <!-- sparkles -->
   <path d="M418 82c4.500 24 11 30.500 35 35-24 4.500-30.500 11-35 35-4.500-24-11-30.500-35-35 24-4.500 30.500-11 35-35Z" fill="#fff"/>
   <path d="M92 356c2.300 12 5.700 15.400 17.700 17.700-12 2.300-15.400 5.700-17.700 17.700-2.300-12-5.700-15.400-17.700-17.700 12-2.300 15.400-5.700 17.700-17.700Z" fill="#fff" opacity=".85"/>
+  <path d="M322 160c2.800 14.500 6.900 18.700 21.400 21.400-14.500 2.800-18.700 6.900-21.400 21.400-2.800-14.500-6.900-18.700-21.400-21.400 14.500-2.800 18.700-6.900 21.400-21.400Z" fill="#fff" opacity=".9"/>
 </svg>
