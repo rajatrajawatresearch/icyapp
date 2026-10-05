@@ -1,6 +1,5 @@
 // Shared between server and client code — keep free of server-only imports.
 
-
 /**
  * Every "Delete in" dropdown (one row, or a data reset) offers the same
  * choices: seconds before the rows are gone for good. 0 = at once, no undo.
@@ -15,11 +14,24 @@ export function delayLabel(seconds: number) {
 }
 
 // "account" is a staff account: an admin, a super admin or a delivery partner.
-export const TRASH_ENTITIES = ["product", "customer", "order", "account"] as const;
+export const TRASH_ENTITIES = [
+  "product",
+  "customer",
+  "order",
+  "account",
+] as const;
 export type TrashEntity = (typeof TRASH_ENTITIES)[number];
 
-/** What a data reset can clear: everything above, plus the audit log. */
-export const RESET_ENTITIES = [...TRASH_ENTITIES, "audit"] as const;
+/**
+ * What a data reset can clear: everything above, plus the audit log and the
+ * saved default UPI QR / UPI ID / bank details.
+ */
+export const RESET_ENTITIES = [
+  ...TRASH_ENTITIES,
+  "audit",
+  "settings",
+  "notification",
+] as const;
 export type ResetEntity = (typeof RESET_ENTITIES)[number];
 
 export const POLL_INTERVAL_MS = 6000;

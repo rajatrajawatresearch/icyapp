@@ -43,15 +43,20 @@ type Ids = {
   product: string[];
   account: string[];
   audit: string[];
+  notification: string[];
+  /** Not a row id: a single JSON-encoded snapshot of the previous values, for undo. */
+  settings: string[];
 };
 
 /**
  * POST /api/superadmin/reset — bulk "reset" of business data created in a
- * time window. Uses the same safety window as single deletes: rows are hidden
- * now and purged when the timer ends, so it can be undone, unless the delay
- * is 0, which deletes at once. It can also clear staff accounts (never the
- * one doing the reset) and the audit log; reports are computed from orders,
- * so resetting orders resets them. Store settings are never touched.
+ * time window. Rows are hidden now and purged when the timer ends, so it can
+ * be undone, unless the delay is 0, which deletes at once. It can also clear
+ * staff accounts (never the one doing the reset) and the audit log; reports
+ * are computed from orders, so resetting orders resets them. Notifications
+ * and the saved default QR/UPI ID/bank details are cleared at once — they
+ * have no trash window — but a settings reset can still be undone while the
+ * page stays open.
  */
 export async function POST(req: Request) {
   const auth = await requireAdminApi({ superOnly: true });
@@ -67,11 +72,20 @@ export async function POST(req: Request) {
     scheduledDeleteAt: null,
     ...(since && { createdAt: { gte: since } }),
   };
+  const notifWhere = since ? { createdAt: { gte: since } } : {};
   const want = new Set(entities);
   const pick = { select: { id: true } };
   const none = Promise.resolve([] as { id: string }[]);
 
-  const [orders, customers, products, accounts, auditRows] = await Promise.all([
+  const [
+    orders,
+    customers,
+    products,
+    accounts,
+    auditRows,
+    notifications,
+    settingsRow,
+  ] = await Promise.all([
     want.has("order") ? prisma.order.findMany({ where, ...pick }) : none,
     want.has("customer") ? prisma.customer.findMany({ where, ...pick }) : none,
     want.has("product") ? prisma.product.findMany({ where, ...pick }) : none,
@@ -83,13 +97,33 @@ export async function POST(req: Request) {
         })
       : Promise.resolve([] as { id: string; name: string; email: string }[]),
     want.has("audit") ? prisma.auditLog.findMany({ where, ...pick }) : none,
+    want.has("notification")
+      ? prisma.notification.findMany({ where: notifWhere, ...pick })
+      : none,
+    want.has("settings")
+      ? prisma.storeSettings.findUnique({ where: { id: 1 } })
+      : null,
   ]);
+
+  const hasPayDefaults = Boolean(
+    settingsRow?.payQrImageUrl || settingsRow?.payUpiId || settingsRow?.payNote,
+  );
   const ids: Ids = {
     order: orders.map((r) => r.id),
     customer: customers.map((r) => r.id),
     product: products.map((r) => r.id),
     account: accounts.map((r) => r.id),
     audit: auditRows.map((r) => r.id),
+    notification: notifications.map((r) => r.id),
+    settings: hasPayDefaults
+      ? [
+          JSON.stringify({
+            payQrImageUrl: settingsRow!.payQrImageUrl,
+            payUpiId: settingsRow!.payUpiId,
+            payNote: settingsRow!.payNote,
+          }),
+        ]
+      : [],
   };
   const counts = {
     order: ids.order.length,
@@ -97,6 +131,8 @@ export async function POST(req: Request) {
     product: ids.product.length,
     account: ids.account.length,
     audit: ids.audit.length,
+    notification: ids.notification.length,
+    settings: ids.settings.length,
   };
   if (dryRun) return NextResponse.json({ counts });
 
@@ -128,6 +164,16 @@ export async function POST(req: Request) {
       where: { id: { in: ids.audit }, scheduledDeleteAt: null },
       data,
     }),
+    // No trash window for these two: gone (or cleared) right away.
+    prisma.notification.deleteMany({ where: { id: { in: ids.notification } } }),
+    ...(hasPayDefaults
+      ? [
+          prisma.storeSettings.update({
+            where: { id: 1 },
+            data: { payQrImageUrl: null, payUpiId: null, payNote: null },
+          }),
+        ]
+      : []),
   ]);
   // Entries by a deleted account outlive it: write the name onto them first.
   for (const account of accounts) await keepActorName(account.id, account);
@@ -140,7 +186,7 @@ export async function POST(req: Request) {
     auth.admin.id,
     delaySeconds === 0 ? "bulk_reset" : "scheduled_bulk_reset",
     "reset",
-    `${counts.order} orders, ${counts.customer} customers, ${counts.product} products, ${counts.account} accounts, ${counts.audit} audit entries · ${window} · ${
+    `${counts.order} orders, ${counts.customer} customers, ${counts.product} products, ${counts.account} accounts, ${counts.audit} audit entries, ${counts.notification} notifications${hasPayDefaults ? ", default payment details" : ""} · ${window} · ${
       delaySeconds === 0 ? "deleted at once" : `deletes in ${delaySeconds}s`
     }`,
   );
@@ -158,6 +204,8 @@ const UndoSchema = z.object({
     product: z.array(z.string()),
     account: z.array(z.string()).default([]),
     audit: z.array(z.string()).default([]),
+    notification: z.array(z.string()).default([]),
+    settings: z.array(z.string()).default([]),
   }),
 });
 
@@ -193,14 +241,22 @@ export async function DELETE(req: Request) {
       data,
     }),
   ]);
-  const restored = o.count + c.count + p.count + a.count + l.count;
+  // Notifications are gone for good; settings are restored from the snapshot.
+  let settingsRestored = 0;
+  if (ids.settings[0]) {
+    const snap = JSON.parse(ids.settings[0]);
+    await prisma.storeSettings.update({ where: { id: 1 }, data: snap });
+    settingsRestored = 1;
+  }
+  const restored =
+    o.count + c.count + p.count + a.count + l.count + settingsRestored;
   if (restored === 0)
     return jsonError("Too late — the reset has already been applied", 410);
   await audit(
     auth.admin.id,
     "undo_bulk_reset",
     "reset",
-    `${o.count} orders, ${c.count} customers, ${p.count} products, ${a.count} accounts, ${l.count} audit entries restored`,
+    `${o.count} orders, ${c.count} customers, ${p.count} products, ${a.count} accounts, ${l.count} audit entries restored${settingsRestored ? ", default payment details restored" : ""}`,
   );
   return NextResponse.json({ restored });
 }

@@ -40,6 +40,8 @@ const ENTITIES: { id: ResetEntity; label: string }[] = [
   { id: "product", label: "Products" },
   { id: "account", label: "Team accounts" },
   { id: "audit", label: "Audit log" },
+  { id: "notification", label: "Notifications" },
+  { id: "settings", label: "Default QR / UPI / bank details" },
 ];
 
 /** "3 orders, 1 customer": only what was actually touched. */
@@ -49,7 +51,10 @@ const summary = (counts: Counts) =>
     .join(", ");
 
 export function ResetClient() {
-  const [entities, setEntities] = useState<ResetEntity[]>(["order"]);
+  const [entities, setEntities] = useState<ResetEntity[]>([
+    "order",
+    "customer",
+  ]);
   const [preset, setPreset] = useState<number | "custom">(DEFAULT_PRESET);
   const [custom, setCustom] = useState<{ amount: string; unit: Unit }>({
     amount: "30",
@@ -191,7 +196,13 @@ export function ResetClient() {
                     )
                   }
                 >
-                  {on && <Check className="mr-1 inline h-3.5 w-3.5" strokeWidth={3} aria-hidden />}
+                  {on && (
+                    <Check
+                      className="mr-1 inline h-3.5 w-3.5"
+                      strokeWidth={3}
+                      aria-hidden
+                    />
+                  )}
                   {e.label}
                   {counts && on ? ` (${counts[e.id]})` : ""}
                 </button>
@@ -209,7 +220,9 @@ export function ResetClient() {
             className={input}
             value={preset}
             onChange={(e) =>
-              setPreset(e.target.value === "custom" ? "custom" : Number(e.target.value))
+              setPreset(
+                e.target.value === "custom" ? "custom" : Number(e.target.value),
+              )
             }
           >
             {PRESETS.map((p, i) => (
@@ -273,6 +286,18 @@ export function ResetClient() {
             <span className="block text-xs text-ink-3">
               Team accounts: admins and delivery partners, signed out at once.
               Your own account is never deleted.
+            </span>
+          )}
+          {entities.includes("notification") && (
+            <span className="block text-xs text-ink-3">
+              Notifications are deleted at once — no trash window, can&apos;t be
+              undone.
+            </span>
+          )}
+          {entities.includes("settings") && (
+            <span className="block text-xs text-ink-3">
+              The saved default QR, UPI ID and bank details are cleared at once
+              (undo while this page stays open restores them).
             </span>
           )}
         </div>
